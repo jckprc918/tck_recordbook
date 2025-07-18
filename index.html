@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TCK Record Book - Cloud</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Pyodide for Excel Generation -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+  <!-- Chart.js for Graphics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .new-row, .modal-backdrop { animation: fadeIn 0.5s ease-out; }
+    select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 0.5rem center;
+        background-repeat: no-repeat;
+        background-size: 1.5em 1.5em;
+        padding-right: 2.5rem;
+        -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    }
+    .hidden { display: none; }
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(100%); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toast-out {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(100%); }
+    }
+    .toast { animation: toast-in 0.5s ease-out forwards; }
+    .toast.fading-out { animation: toast-out 0.5s ease-in forwards; }
+    .chart-btn.active, .kpi-range-btn.active {
+        background-color: #f97316; /* TCK Orange */
+        color: white;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+
+  <!-- Login View -->
+  <div id="login-view" class="w-full min-h-screen flex items-center justify-center p-4">
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full max-w-md">
+          <form id="loginForm">
+              <!-- Step 1: Email -->
+              <div id="email-step" class="p-8 md:p-10">
+                  <div class="text-center mb-8">
+                      <img src="logo.png" alt="TCK Logo" class="mx-auto h-20 mb-4">
+                      <h1 class="text-2xl font-bold text-gray-800">Sign in</h1>
+                      <p class="text-gray-600 mt-2">to continue to TCK Record Book</p>
+                  </div>
+                  <div id="email-auth-error" class="text-red-500 text-sm text-center mb-4"></div>
+                  <div>
+                      <label for="email" class="sr-only">Email</label>
+                      <input type="email" id="email" placeholder="Email" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3" />
+                  </div>
+                  <div class="flex items-center justify-between mt-8">
+                      <button type="button" id="create-account-btn" class="font-semibold text-orange-600 hover:text-orange-700">Create account</button>
+                      <button type="button" id="next-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-md shadow-sm transition-all duration-200">Next</button>
+                  </div>
+              </div>
+
+              <!-- Step 2: Password -->
+              <div id="password-step" class="hidden p-8 md:p-10">
+                  <div class="text-center mb-8">
+                      <img src="logo.png" alt="TCK Logo" class="mx-auto h-20 mb-4">
+                      <h1 class="text-2xl font-bold text-gray-800">Welcome</h1>
+                      <div class="mt-3">
+                          <button type="button" id="change-email-btn" class="inline-flex items-center gap-2 border border-gray-300 rounded-full py-1 px-3 text-sm text-gray-700 hover:bg-gray-100">
+                              <span id="user-email-display"></span>
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                          </button>
+                      </div>
+                  </div>
+                  <div id="password-auth-error" class="text-red-500 text-sm text-center mb-4"></div>
+                  <div>
+                      <label for="password" class="sr-only">Password</label>
+                      <input type="password" id="password" placeholder="Enter your password" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3" />
+                  </div>
+                  <div class="flex items-center justify-end mt-8">
+                      <button type="submit" id="submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-md shadow-sm transition-all duration-200">Sign In</button>
+                  </div>
+              </div>
+          </form>
+      </div>
+  </div>
+
+  <!-- Main App View -->
+  <div id="app-view" class="w-full hidden">
+    <header class="sticky top-0 z-50 bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <!-- Left Side: Logo and Title -->
+            <div class="flex items-center gap-3">
+                <img src="logo.png" alt="TCK Logo" class="h-12 w-auto">
+                <h1 class="text-xl font-bold text-gray-800">TCK Record Book</h1>
+            </div>
+
+            <!-- Center: Tabs (on larger screens) -->
+            <nav class="w-full md:w-auto md:flex-grow flex justify-center order-3 md:order-2">
+                <div class="flex space-x-2" aria-label="Tabs">
+                    <button id="dashboard-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm bg-orange-500 text-white">Dashboard</button>
+                    <button id="add-entry-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200">Add Entry</button>
+                    <button id="management-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200">Manage Entries</button>
+                    <button id="data-management-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200">Data & Journals</button>
+                </div>
+            </nav>
+
+            <!-- Right Side: User Info -->
+            <div class="flex items-center gap-4 order-2 md:order-3">
+                <span id="syncStatus" class="text-sm text-gray-500 flex items-center gap-1"></span>
+                <!-- User Menu Dropdown -->
+                <div class="relative">
+                    <button id="user-menu-button" type="button" class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-600 p-2 rounded-lg hover:bg-orange-50">
+                        <span id="userEmail" class="hidden md:block"></span>
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <div id="user-menu" class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu">
+                        <div class="py-1" role="none">
+                            <div class="px-4 py-2 text-sm text-gray-700">
+                                <p class="font-medium">Signed in as</p>
+                                <p id="user-email-dropdown" class="truncate"></p>
+                            </div>
+                            <button id="signOutBtn" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100" role="menuitem">
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full p-4 md:p-6">
+        <div id="tab-content-wrapper" class="max-w-7xl w-full mx-auto">
+            <!-- Dashboard Tab Content -->
+            <div id="dashboard-content-container">
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
+                    <h2 id="dashboard-title" class="text-xl font-bold text-gray-800">Dashboard</h2>
+                    <div class="inline-flex rounded-md shadow-sm" role="group">
+                         <button type="button" data-range="week" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">This Week</button>
+                         <button type="button" data-range="month" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500 active">This Month</button>
+                         <button type="button" data-range="year" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-r border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">This Year</button>
+                         <button type="button" data-range="all" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">All Time</button>
+                    </div>
+                </div>
+
+                <div id="dashboard-message" class="text-center text-gray-500 mt-4 hidden">Select a journal to see the dashboard.</div>
+                <div id="dashboard-main-content">
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <p class="text-sm font-medium text-gray-500">Total Income</p>
+                            <p id="kpi-income" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
+                            <p id="kpi-income-comp" class="text-xs text-gray-500 mt-1">&nbsp;</p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <p class="text-sm font-medium text-gray-500">Total Expense</p>
+                            <p id="kpi-expense" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
+                            <p id="kpi-expense-comp" class="text-xs text-gray-500 mt-1">&nbsp;</p>
+                        </div>
+                        <div class="bg-white rounded-xl shadow p-5">
+                            <p class="text-sm font-medium text-gray-500">Net Balance</p>
+                            <p id="kpi-net" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
+                            <p id="kpi-net-comp" class="text-xs text-gray-500 mt-1">&nbsp;</p>
+                        </div>
+                    </div>
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-xl shadow p-5 h-80"><canvas id="incomeBarChart"></canvas></div>
+                        <div class="bg-white rounded-xl shadow p-5 h-80"><canvas id="expenseBarChart"></canvas></div>
+                        <div class="bg-white rounded-xl shadow p-5 h-80">
+                             <div class="text-center mb-2">
+                                <h3 id="chart-title" class="text-md font-semibold text-gray-700">Breakdown by Source</h3>
+                                <div class="flex justify-center items-center gap-4 mt-1">
+                                    <div class="inline-flex rounded-md shadow-sm" role="group">
+                                        <button type="button" id="chart-type-expense" class="chart-btn px-3 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">Expenses</button>
+                                        <button type="button" id="chart-type-income" class="chart-btn px-3 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">Incomes</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="relative h-56 w-full"><canvas id="donutChart"></canvas></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow p-5 h-80"><canvas id="netBalanceAreaChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Add Entry Tab Content -->
+            <div id="add-entry-content-container" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
+                          <h2 class="text-xl font-bold text-gray-800 mb-4">Add New Entry</h2>
+                          <form id="entryForm" class="grid grid-cols-1 gap-4">
+                            <div>
+                              <label for="date" class="block text-sm font-medium text-gray-700">Date</label>
+                              <input type="text" id="date" placeholder="dd/mm/yyyy" required maxlength="10" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                            </div>
+                            <div>
+                              <label for="type" class="block text-sm font-medium text-gray-700">Entry Type</label>
+                              <select id="type" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
+                                <option value="Income">Income</option>
+                                <option value="Expense" selected>Expense</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="method" class="block text-sm font-medium text-gray-700">Source / Method</label>
+                              <select id="method" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
+                                <option value="Mobile Money">Mobile Money</option>
+                                <option value="Bank">Bank</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="narration" class="block text-sm font-medium text-gray-700">Narration / Category</label>
+                              <input type="text" id="narration" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                            </div>
+                            <div>
+                              <label for="amount" class="block text-sm font-medium text-gray-700">Amount (UGX)</label>
+                              <input type="number" id="amount" min="0" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                            </div>
+                            <button type="submit" id="addEntryBtn" class="mt-3 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50">
+                              Add Entry
+                            </button>
+                          </form>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2">
+                         <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Entries</h2>
+                            <div class="overflow-y-auto" style="max-height: 28rem;">
+                                <table id="recentEntriesTable" class="min-w-full text-sm">
+                                    <thead class="bg-gray-100 sticky top-0">
+                                        <tr class="text-left text-gray-600 uppercase tracking-wider">
+                                            <th class="py-2 px-4">Date</th>
+                                            <th class="py-2 px-4">Narration</th>
+                                            <th class="py-2 px-4">Type</th>
+                                            <th class="py-2 px-4 text-right">Amount</th>
+                                            <th class="py-2 px-4 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-entries-body" class="divide-y divide-gray-200">
+                                        <!-- JS will populate this -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Manage Entries Tab Content -->
+            <div id="management-content-container" class="hidden">
+              <div class="w-full bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div class="p-6">
+                  <div class="flex justify-between items-center flex-wrap gap-4 mb-4">
+                      <h2 id="entriesTitle" class="text-xl font-bold text-gray-800">Entries</h2>
+                      <button id="downloadBtn" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                          Download Excel
+                      </button>
+                  </div>
+                  <div class="bg-gray-100 rounded-lg p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                      <div>
+                          <p class="text-sm font-medium text-gray-500">Filtered Income</p>
+                          <p id="filtered-income" class="text-lg font-bold text-lime-600">UGX 0</p>
+                      </div>
+                      <div>
+                          <p class="text-sm font-medium text-gray-500">Filtered Expense</p>
+                          <p id="filtered-expense" class="text-lg font-bold text-red-600">UGX 0</p>
+                      </div>
+                      <div>
+                          <p class="text-sm font-medium text-gray-500">Net</p>
+                          <p id="filtered-net" class="text-lg font-bold text-blue-800">UGX 0</p>
+                      </div>
+                  </div>
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                          <label for="start-date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                          <input type="date" id="start-date" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                      </div>
+                      <div>
+                          <label for="end-date" class="block text-sm font-medium text-gray-700">End Date</label>
+                          <input type="date" id="end-date" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                      </div>
+                      <div class="col-span-2 md:col-span-1">
+                          <label class="block text-sm font-medium text-transparent">Actions</label>
+                          <div class="flex gap-2">
+                            <button id="filter-by-date-btn" class="w-full mt-1 bg-orange-200 hover:bg-orange-300 text-orange-800 font-bold py-2 px-4 rounded-lg text-sm">Filter</button>
+                            <button id="clear-date-filter-btn" class="w-full mt-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">Clear</button>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="mb-4">
+                      <label for="search-input" class="sr-only">Search Entries</label>
+                      <input type="search" id="search-input" placeholder="Search by narration..." class="w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                  </div>
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pb-4 border-b border-gray-200">
+                      <div>
+                          <label for="sort-by" class="block text-sm font-medium text-gray-700">Sort by</label>
+                          <select id="sort-by" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                              <option value="date_desc">Newest First</option>
+                              <option value="date_asc">Oldest First</option>
+                              <option value="amount_desc">Amount (High-Low)</option>
+                              <option value="amount_asc">Amount (Low-High)</option>
+                          </select>
+                      </div>
+                      <div>
+                          <label for="filter-type" class="block text-sm font-medium text-gray-700">Type</label>
+                          <select id="filter-type" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                              <option value="all">All</option>
+                              <option value="Income">Income</option>
+                              <option value="Expense">Expense</option>
+                          </select>
+                      </div>
+                      <div>
+                          <label for="filter-method" class="block text-sm font-medium text-gray-700">Method</label>
+                          <select id="filter-method" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                              <option value="all">All</option>
+                              <option value="Mobile Money">Mobile Money</option>
+                              <option value="Bank">Bank</option>
+                          </select>
+                      </div>
+                       <div>
+                          <label class="block text-sm font-medium text-transparent">Reset</label>
+                          <button id="reset-filters" class="w-full mt-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">
+                              Reset All Filters
+                          </button>
+                      </div>
+                  </div>
+                   <p id="statusMessage" class="text-center text-sm text-gray-600 mt-1 h-5"></p>
+                </div>
+                <div class="px-6 pb-4 flex items-center gap-4">
+                    <button id="bulk-delete-btn" class="hidden bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 px-4 rounded-lg text-sm">Delete Selected (0)</button>
+                </div>
+                <div class="overflow-x-auto">
+                  <table id="entriesTable" class="min-w-full text-sm">
+                    <thead class="bg-gray-100 border-b border-gray-200">
+                      <tr class="text-left text-gray-600 uppercase tracking-wider">
+                        <th class="py-3 px-4 w-12 text-center"><input type="checkbox" id="select-all-checkbox"></th>
+                        <th class="py-3 px-4">Date</th>
+                        <th class="py-3 px-4">Type</th>
+                        <th class="py-3 px-4">Method</th>
+                        <th class="py-3 px-4">Narration</th>
+                        <th class="py-3 px-4 text-right">Amount</th>
+                        <th class="py-3 px-4 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-gray-200"></tbody>
+                  </table>
+                </div>
+                <div id="pagination-controls" class="p-6 flex justify-center items-center gap-4 text-sm">
+                    <button id="prev-page-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
+                    <span id="page-info">Page 1 of 1</span>
+                    <button id="next-page-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Data Management Tab -->
+            <div id="data-management-content-container" class="hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Manage Journals</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="journalSelector" class="block text-sm font-medium text-gray-700">Current Journal</label>
+                                <select id="journalSelector" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2"></select>
+                            </div>
+                            <button id="createJournalBtn" class="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                                Create New Journal
+                            </button>
+                            <button id="renameJournalBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                                Rename Current Journal
+                            </button>
+                            <button id="deleteJournalBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50" disabled>
+                                Delete Current Journal
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">Data Management</h2>
+                        <div class="space-y-4">
+                            <button id="downloadBackupBtn" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                                Download Backup (JSON)
+                            </button>
+                            <button id="importBackupBtn" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                                Import from Backup
+                            </button>
+                            <input type="file" id="fileImporter" class="hidden" accept=".json">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+      <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
+          <h3 id="modalTitle" class="text-lg font-bold text-gray-900 mb-2">Are you sure?</h3>
+          <p id="modalMessage" class="text-sm text-gray-600 mb-6">This action cannot be undone.</p>
+          <div class="flex justify-center gap-4">
+              <button id="modalCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors">Cancel</button>
+              <button id="modalConfirmBtn" class="px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors">Confirm</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Edit Entry Modal -->
+    <div id="editEntryModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Edit Entry</h3>
+            <form id="editEntryForm" class="grid grid-cols-1 gap-4">
+                <input type="hidden" id="editEntryId">
+                <div>
+                    <label for="editDate" class="block text-sm font-medium text-gray-700">Date</label>
+                    <input type="text" id="editDate" placeholder="dd/mm/yyyy" required maxlength="10" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                </div>
+                <div>
+                    <label for="editType" class="block text-sm font-medium text-gray-700">Entry Type</label>
+                    <select id="editType" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
+                        <option value="Income">Income</option>
+                        <option value="Expense">Expense</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="editMethod" class="block text-sm font-medium text-gray-700">Source / Method</label>
+                    <select id="editMethod" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Bank">Bank</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="editNarration" class="block text-sm font-medium text-gray-700">Narration / Category</label>
+                    <input type="text" id="editNarration" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                </div>
+                <div>
+                    <label for="editAmount" class="block text-sm font-medium text-gray-700">Amount (UGX)</label>
+                    <input type="number" id="editAmount" min="0" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                </div>
+                <div class="flex justify-end gap-4 mt-4">
+                    <button type="button" id="editCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors">Cancel</button>
+                    <button type="submit" class="px-6 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+
+  <!-- Firebase and App Logic -->
+  <script type="module">
+    // --- FIREBASE SDK IMPORTS ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { 
+        getAuth, 
+        onAuthStateChanged,
+        createUserWithEmailAndPassword,
+        signInWithEmailAndPassword,
+        signOut
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+        getFirestore, 
+        doc, 
+        setDoc, 
+        onSnapshot 
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- FIREBASE CONFIGURATION ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBP4p26TLOqL9muN5JndpUZolaunzQgKC0",
+      authDomain: "ie-entry.firebaseapp.com",
+      projectId: "ie-entry",
+      storageBucket: "ie-entry.appspot.com",
+      messagingSenderId: "864058205761",
+      appId: "1:864058205761:web:a70f7e3e20f0df3a8708c0",
+      measurementId: "G-327XF816YG"
+    };
+
+    // --- FIREBASE INITIALIZATION ---
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- DOM ELEMENT REFERENCES ---
+    const loginView = document.getElementById('login-view');
+    const appView = document.getElementById('app-view');
+    
+    // New Login Form elements
+    const loginForm = document.getElementById('loginForm');
+    const emailStep = document.getElementById('email-step');
+    const passwordStep = document.getElementById('password-step');
+    const nextBtn = document.getElementById('next-btn');
+    const createAccountBtn = document.getElementById('create-account-btn');
+    const changeEmailBtn = document.getElementById('change-email-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const userEmailDisplay = document.getElementById('user-email-display');
+    const emailAuthError = document.getElementById('email-auth-error');
+    const passwordAuthError = document.getElementById('password-auth-error');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+
+    const signOutBtn = document.getElementById('signOutBtn');
+    const userEmailSpan = document.getElementById('userEmail');
+    const userEmailDropdown = document.getElementById('user-email-dropdown');
+    const userMenuButton = document.getElementById('user-menu-button');
+    const userMenu = document.getElementById('user-menu');
+    const syncStatus = document.getElementById('syncStatus');
+    const entryForm = document.getElementById('entryForm');
+    const tableBody = document.getElementById('tableBody');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const downloadBackupBtn = document.getElementById('downloadBackupBtn');
+    const importBackupBtn = document.getElementById('importBackupBtn');
+    const fileImporter = document.getElementById('fileImporter');
+    const statusMessage = document.getElementById('statusMessage');
+    const journalSelector = document.getElementById('journalSelector');
+    const createJournalBtn = document.getElementById('createJournalBtn');
+    const renameJournalBtn = document.getElementById('renameJournalBtn');
+    const deleteJournalBtn = document.getElementById('deleteJournalBtn');
+    const entriesTitle = document.getElementById('entriesTitle');
+    const addEntryBtn = document.getElementById('addEntryBtn');
+    const dateInput = document.getElementById('date');
+    const typeSelect = document.getElementById('type');
+    const methodSelect = document.getElementById('method');
+    const searchInput = document.getElementById('search-input');
+    const sortBySelect = document.getElementById('sort-by');
+    const filterTypeSelect = document.getElementById('filter-type');
+    const filterMethodSelect = document.getElementById('filter-method');
+    const resetFiltersBtn = document.getElementById('reset-filters');
+    const confirmationModal = document.getElementById('confirmationModal');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    const editEntryModal = document.getElementById('editEntryModal');
+    const editEntryForm = document.getElementById('editEntryForm');
+    const editCancelBtn = document.getElementById('editCancelBtn');
+    const editDateInput = document.getElementById('editDate');
+    const recentEntriesBody = document.getElementById('recent-entries-body');
+
+    // Dashboard Elements
+    const dashboardMainContent = document.getElementById('dashboard-main-content');
+    const dashboardMessage = document.getElementById('dashboard-message');
+    const dashboardTitle = document.getElementById('dashboard-title');
+    const lastUpdatedSpan = document.getElementById('last-updated-span');
+    const kpiIncomeEl = document.getElementById('kpi-income');
+    const kpiIncomeCompEl = document.getElementById('kpi-income-comp');
+    const kpiExpenseEl = document.getElementById('kpi-expense');
+    const kpiExpenseCompEl = document.getElementById('kpi-expense-comp');
+    const kpiNetEl = document.getElementById('kpi-net');
+    const kpiNetCompEl = document.getElementById('kpi-net-comp');
+    const kpiRangeBtns = document.querySelectorAll('.kpi-range-btn');
+
+    const donutChartCanvas = document.getElementById('donutChart');
+    const incomeBarChartCanvas = document.getElementById('incomeBarChart');
+    const expenseBarChartCanvas = document.getElementById('expenseBarChart');
+    const netBalanceAreaChartCanvas = document.getElementById('netBalanceAreaChart');
+    
+    const chartTitle = document.getElementById('chart-title');
+    const chartTypeBtns = {
+        expense: document.getElementById('chart-type-expense'),
+        income: document.getElementById('chart-type-income'),
+    };
+    
+    let donutChartInstance, incomeBarChartInstance, expenseBarChartInstance, netBalanceAreaChartInstance;
+
+
+    // Enhanced Manage Tab DOM Elements
+    const filteredIncomeEl = document.getElementById('filtered-income');
+    const filteredExpenseEl = document.getElementById('filtered-expense');
+    const filteredNetEl = document.getElementById('filtered-net');
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+    const filterByDateBtn = document.getElementById('filter-by-date-btn');
+    const clearDateFilterBtn = document.getElementById('clear-date-filter-btn');
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const prevPageBtn = document.getElementById('prev-page-btn');
+    const nextPageBtn = document.getElementById('next-page-btn');
+    const pageInfo = document.getElementById('page-info');
+
+    // Tab-related DOM elements
+    const tabButtons = {
+        dashboard: document.getElementById('dashboard-tab-btn'),
+        add: document.getElementById('add-entry-tab-btn'),
+        manage: document.getElementById('management-tab-btn'),
+        data: document.getElementById('data-management-tab-btn'),
+    };
+    const tabContents = {
+        dashboard: document.getElementById('dashboard-content-container'),
+        add: document.getElementById('add-entry-content-container'),
+        manage: document.getElementById('management-content-container'),
+        data: document.getElementById('data-management-content-container'),
+    };
+
+    // --- APP STATE ---
+    let appData = {};
+    let currentUser = null;
+    let unsubscribeFromFirestore = null; 
+    let confirmCallback = null;
+    let viewOptions = {
+        sortBy: 'date_desc',
+        filterByType: 'all',
+        filterByMethod: 'all',
+        searchTerm: '',
+        startDate: null,
+        endDate: null,
+        currentPage: 1,
+        itemsPerPage: 50,
+        chartDataType: 'expense', // 'income' or 'expense'
+        dashboardDateRange: 'month', // 'week', 'month', 'year', 'all'
+    };
+    let selectedEntryIds = new Set();
+    let syncTimeout;
+    let inactivityTimer;
+
+    // --- INACTIVITY LOGOUT & NOTIFICATIONS ---
+    const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const colors = { success: 'bg-lime-600', error: 'bg-red-600', info: 'bg-blue-800' };
+        toast.className = `toast text-white py-2 px-4 rounded-lg shadow-xl ${colors[type] || colors.info}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fading-out');
+            toast.addEventListener('animationend', () => toast.remove());
+        }, 3000);
+    }
+
+    function logoutDueToInactivity() {
+        if (auth.currentUser) {
+            signOut(auth);
+            showToast("Logged out due to inactivity", "info");
+        }
+    }
+
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(logoutDueToInactivity, 30 * 60 * 1000); // 30 minutes
+    }
+
+    function setupInactivityListeners() {
+        activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer, true));
+        resetInactivityTimer();
+    }
+
+    function removeInactivityListeners() {
+        clearTimeout(inactivityTimer);
+        activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer, true));
+    }
+    
+    // --- UTILITY & PYODIDE ---
+    function getFormattedDate(date, format = 'dd/mm/yyyy') {
+        const d = new Date(date);
+        const userTimezoneOffset = d.getTimezoneOffset() * 60000;
+        const adjustedDate = new Date(d.getTime() + userTimezoneOffset);
+        const yyyy = adjustedDate.getFullYear();
+        const mm = String(adjustedDate.getMonth() + 1).padStart(2, '0');
+        const dd = String(adjustedDate.getDate()).padStart(2, '0');
+        return format === 'yyyy-mm-dd' ? `${yyyy}-${mm}-${dd}` : `${dd}/${mm}/${yyyy}`;
+    }
+
+    function formatTimeAgo(isoString) {
+        if (!isoString) return '';
+        const date = new Date(isoString);
+        const now = new Date();
+        const seconds = Math.round((now - date) / 1000);
+        const minutes = Math.round(seconds / 60);
+        const hours = Math.round(minutes / 60);
+        const days = Math.round(hours / 24);
+
+        if (seconds < 60) return "a few seconds ago";
+        if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+        if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+        if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+        return `on ${date.toLocaleDateString()}`;
+    }
+    
+    function formatAmountForDashboard(amount) {
+        if (amount == null) return 'UGX 0';
+        const sign = amount < 0 ? "-" : "";
+        const absAmount = Math.abs(amount);
+        let formattedValue;
+        if (absAmount >= 1000000) {
+            const millions = absAmount / 1000000;
+            formattedValue = (Math.round(millions * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + 'M';
+        } else {
+            formattedValue = absAmount.toLocaleString();
+        }
+        return `${sign}UGX ${formattedValue}`;
+    }
+
+    function autoFormatDate(event) {
+        const input = event.target;
+        let value = input.value.replace(/\D/g, '');
+        if (event.inputType === 'deleteContentBackward') {
+            input.value = value;
+            return;
+        }
+        value = value.substring(0, 8);
+        if (value.length > 4) {
+            value = `${value.substring(0, 2)}/${value.substring(2, 4)}/${value.substring(4)}`;
+        } else if (value.length > 2) {
+            value = `${value.substring(0, 2)}/${value.substring(2)}`;
+        }
+        input.value = value;
+    }
+
+
+    let pyodideReadyPromise;
+    async function loadPy() {
+      if (!pyodideReadyPromise) {
+        statusMessage.textContent = 'Initializing Excel exporter...';
+        pyodideReadyPromise = loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/" }).then(async (pyodide) => {
+          statusMessage.textContent = 'Loading libraries...';
+          await pyodide.loadPackage(['micropip']);
+          const micropip = pyodide.pyimport("micropip");
+          await micropip.install('openpyxl==3.1.2');
+          statusMessage.textContent = '';
+          return pyodide;
+        });
+      }
+      return pyodideReadyPromise;
+    }
+    
+    // --- AUTHENTICATION LOGIC ---
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            appView.classList.remove('hidden');
+            loginView.classList.add('hidden');
+            document.body.className = 'bg-gray-50 min-h-screen font-sans'; // Set app view body class
+            userEmailSpan.textContent = user.email;
+            userEmailDropdown.textContent = user.email;
+            loadDataFromFirestore();
+            loadPy(); 
+            setupInactivityListeners();
+        } else {
+            currentUser = null;
+            if (unsubscribeFromFirestore) unsubscribeFromFirestore();
+            appView.classList.add('hidden');
+            loginView.classList.remove('hidden');
+            document.body.className = 'bg-gray-100 min-h-screen font-sans'; // Set login view body class
+            userEmailSpan.textContent = '';
+            syncStatus.innerHTML = '';
+            appData = {}; 
+            updateUI();
+            removeInactivityListeners();
+        }
+    });
+    
+    const goToPasswordStep = (submitAction) => {
+        if (!emailInput.value) {
+            emailAuthError.textContent = 'Please enter your email.';
+            return;
+        }
+        emailAuthError.textContent = '';
+        passwordAuthError.textContent = '';
+        userEmailDisplay.textContent = emailInput.value;
+        submitBtn.textContent = submitAction;
+        emailStep.classList.add('hidden');
+        passwordStep.classList.remove('hidden');
+        passwordInput.focus();
+    };
+
+    nextBtn.addEventListener('click', () => goToPasswordStep('Sign In'));
+    createAccountBtn.addEventListener('click', () => goToPasswordStep('Sign Up'));
+    changeEmailBtn.addEventListener('click', () => {
+        passwordStep.classList.add('hidden');
+        emailStep.classList.remove('hidden');
+        emailInput.focus();
+    });
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        const action = submitBtn.textContent;
+
+        if (action === 'Sign In') {
+            signInWithEmailAndPassword(auth, email, password)
+                .catch(error => passwordAuthError.textContent = error.message);
+        } else { // Sign Up
+            if (password.length < 6) {
+                passwordAuthError.textContent = "Password should be at least 6 characters.";
+                return;
+            }
+            createUserWithEmailAndPassword(auth, email, password)
+                .catch(error => passwordAuthError.textContent = error.message);
+        }
+    });
+
+    signOutBtn.addEventListener('click', () => {
+        signOut(auth)
+            .then(() => {
+                window.location.reload();
+            })
+            .catch(error => showToast(error.message, 'error'));
+    });
+
+    // --- DATA HANDLING ---
+    function loadDataFromFirestore() {
+        if (!currentUser) return;
+        const docRef = doc(db, "users", currentUser.uid);
+        unsubscribeFromFirestore = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                appData = docSnap.data();
+            } else {
+                initializeNewState();
+                saveDataToFirestore(); 
+            }
+            updateUI();
+        }, (error) => showToast("Error connecting to cloud data.", 'error'));
+    }
+
+    function initializeNewState() {
+        const firstJournalId = `journal_${Date.now()}`;
+        appData = {
+            journals: { [firstJournalId]: { name: "My First Journal", entries: [], lastModified: new Date().toISOString() } },
+            activeJournalId: firstJournalId
+        };
+    }
+
+    async function saveDataToFirestore(updateTimestamp = false) {
+        if (!currentUser) return;
+
+        if(updateTimestamp && appData.activeJournalId && appData.journals[appData.activeJournalId]) {
+            appData.journals[appData.activeJournalId].lastModified = new Date().toISOString();
+        }
+
+        clearTimeout(syncTimeout);
+        syncStatus.innerHTML = `<svg class="animate-spin h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Saving...</span>`;
+        try {
+            await setDoc(doc(db, "users", currentUser.uid), appData); 
+            syncStatus.innerHTML = `<span class="text-green-600">✓ Synced</span>`;
+        } catch (error) {
+            syncStatus.innerHTML = `<span class="text-red-600">✗ Sync failed</span>`;
+            showToast('Failed to save data to cloud.', 'error');
+        } finally {
+            syncTimeout = setTimeout(() => syncStatus.innerHTML = '', 3000);
+        }
+    }
+    
+    // --- UI RENDERING & LOGIC ---
+    function updateUI() {
+        if (!appData.journals || Object.keys(appData.journals).length === 0) {
+            const isLoggedIn = !!currentUser;
+            entriesTitle.textContent = isLoggedIn ? "No Journal Selected" : "Please sign in";
+            tableBody.innerHTML = `<tr id="placeholderRow"><td colspan="7" class="text-center py-10 text-gray-500">${isLoggedIn ? 'Create a journal to get started.' : 'Sign in to manage your journals.'}</td></tr>`;
+            [addEntryBtn, deleteJournalBtn, downloadBtn, renameJournalBtn, downloadBackupBtn, searchInput].forEach(el => el.disabled = true);
+            createJournalBtn.disabled = !isLoggedIn; importBackupBtn.disabled = !isLoggedIn;
+            journalSelector.innerHTML = `<option>${isLoggedIn ? 'No Journals' : 'Not signed in'}</option>`;
+            dashboardMainContent.classList.add('hidden');
+            dashboardMessage.classList.remove('hidden');
+            return;
+        }
+        dashboardMainContent.classList.remove('hidden');
+        dashboardMessage.classList.add('hidden');
+        loadJournalsIntoSelector();
+        const activeId = appData.activeJournalId;
+        const journalIds = Object.keys(appData.journals);
+        setActiveJournal((activeId && appData.journals[activeId]) ? activeId : journalIds[0]);
+    }
+
+    function loadJournalsIntoSelector() {
+        const sortedIds = Object.keys(appData.journals).sort((a,b) => appData.journals[a].name.localeCompare(appData.journals[b].name));
+        journalSelector.innerHTML = '';
+        sortedIds.forEach(id => {
+            const journal = appData.journals[id];
+            const option = document.createElement('option');
+            option.value = id; option.textContent = journal.name;
+            journalSelector.appendChild(option);
+        });
+    }
+
+    function setActiveJournal(journalId) {
+        appData.activeJournalId = journalId;
+        journalSelector.value = journalId;
+        dateInput.value = getFormattedDate(new Date());
+        const selectedJournal = appData.journals[journalId];
+        entriesTitle.textContent = `Entries for: ${selectedJournal.name}`;
+        [addEntryBtn, deleteJournalBtn, createJournalBtn, renameJournalBtn, downloadBackupBtn, importBackupBtn, searchInput].forEach(el => el.disabled = false);
+        resetAllFilters();
+    }
+    
+    function getFilteredEntries() {
+        const activeJournal = appData.journals[appData.activeJournalId];
+        if (!activeJournal || !activeJournal.entries) return [];
+        const searchTerm = viewOptions.searchTerm.toLowerCase();
+        
+        return activeJournal.entries.filter(e => {
+            const entryDate = new Date(e.date);
+            const startDate = viewOptions.startDate ? new Date(viewOptions.startDate) : null;
+            const endDate = viewOptions.endDate ? new Date(viewOptions.endDate) : null;
+            if (startDate && entryDate < startDate) return false;
+            if (endDate && entryDate > endDate) return false;
+
+            return (viewOptions.filterByType === 'all' || e.type === viewOptions.filterByType) &&
+                   (viewOptions.filterByMethod === 'all' || e.method === viewOptions.filterByMethod) &&
+                   (!searchTerm || e.narration.toLowerCase().includes(searchTerm));
+        });
+    }
+
+    function renderRecentEntriesPreview() {
+        const activeJournal = appData.journals[appData.activeJournalId];
+        if (!activeJournal || !activeJournal.entries || activeJournal.entries.length === 0) {
+            recentEntriesBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">No recent entries to show.</td></tr>`;
+            return;
+        }
+        
+        const recentEntries = [...activeJournal.entries]
+            .sort((a, b) => b.id.localeCompare(a.id))
+            .slice(0, 30);
+
+        recentEntriesBody.innerHTML = recentEntries.map(entry => {
+            const typeClass = entry.type === 'Income' ? 'bg-lime-100 text-lime-800' : 'bg-red-100 text-red-800';
+            return `
+                <tr class="new-row">
+                    <td class="py-2 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td>
+                    <td class="py-2 px-4 break-words">${entry.narration}</td>
+                    <td class="py-2 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">${entry.type}</span></td>
+                    <td class="py-2 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td>
+                    <td class="py-2 px-4 text-center whitespace-nowrap">
+                        <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors text-xs mr-2">Edit</button>
+                        <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors text-xs">Delete</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function updateFilteredSummary(filteredEntries) {
+        const income = filteredEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0);
+        const expense = filteredEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0);
+        const net = income - expense;
+        filteredIncomeEl.textContent = `UGX ${income.toLocaleString()}`;
+        filteredExpenseEl.textContent = `UGX ${expense.toLocaleString()}`;
+        filteredNetEl.textContent = `UGX ${net.toLocaleString()}`;
+        filteredNetEl.className = `text-lg font-bold ${net >= 0 ? 'text-blue-800' : 'text-red-600'}`;
+    }
+
+    function renderTable() {
+        renderDashboard();
+        renderRecentEntriesPreview();
+        
+        const allFilteredEntries = getFilteredEntries();
+        updateFilteredSummary(allFilteredEntries);
+
+        let sortedEntries = [...allFilteredEntries];
+        if (viewOptions.sortBy === 'amount_asc') sortedEntries.sort((a, b) => a.amount - b.amount);
+        else if (viewOptions.sortBy === 'amount_desc') sortedEntries.sort((a, b) => b.amount - a.amount);
+        else {
+            sortedEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+            if(viewOptions.sortBy === 'date_desc') sortedEntries.reverse();
+        }
+
+        const totalPages = Math.ceil(sortedEntries.length / viewOptions.itemsPerPage);
+        viewOptions.currentPage = Math.max(1, Math.min(viewOptions.currentPage, totalPages || 1));
+        const startIndex = (viewOptions.currentPage - 1) * viewOptions.itemsPerPage;
+        const endIndex = startIndex + viewOptions.itemsPerPage;
+        const entriesToRender = sortedEntries.slice(startIndex, endIndex);
+
+        tableBody.innerHTML = '';
+        downloadBtn.disabled = allFilteredEntries.length === 0;
+
+        if (allFilteredEntries.length === 0) {
+            const hasAnyEntries = appData.journals[appData.activeJournalId]?.entries?.length > 0;
+            const message = hasAnyEntries ? "No entries match your current filters." : "No entries in this journal.";
+            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500">${message}</td></tr>`;
+        } else {
+            entriesToRender.forEach(entry => tableBody.appendChild(createRowElement(entry)));
+        }
+
+        updatePaginationControls(sortedEntries.length, totalPages);
+        updateBulkDeleteButton();
+        selectAllCheckbox.checked = false;
+    }
+
+    function createRowElement(entry) {
+        const tr = document.createElement('tr');
+        tr.className = 'new-row'; 
+        tr.dataset.id = entry.id;
+        const isChecked = selectedEntryIds.has(entry.id);
+
+        tr.innerHTML = `
+            <td class="py-3 px-4 w-12 text-center"><input type="checkbox" data-id="${entry.id}" class="row-checkbox" ${isChecked ? 'checked' : ''}></td>
+            <td class="py-3 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td>
+            <td class="py-3 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${entry.type === 'Income' ? 'bg-lime-100 text-lime-800' : 'bg-red-100 text-red-800'}">${entry.type}</span></td>
+            <td class="py-3 px-4 whitespace-nowrap">${entry.method}</td>
+            <td class="py-3 px-4 break-words">${entry.narration}</td>
+            <td class="py-3 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td>
+            <td class="py-3 px-4 text-center whitespace-nowrap">
+                <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors mr-2">Edit</button>
+                <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors">Delete</button>
+            </td>`;
+        return tr;
+    }
+    
+    function updatePaginationControls(totalEntries, totalPages) {
+        pageInfo.textContent = `Page ${viewOptions.currentPage} of ${totalPages || 1}`;
+        prevPageBtn.disabled = viewOptions.currentPage === 1;
+        nextPageBtn.disabled = viewOptions.currentPage >= totalPages;
+    }
+
+    function renderDashboard() {
+        const activeJournal = appData.journals[appData.activeJournalId];
+        if (!activeJournal || !activeJournal.entries) {
+            dashboardMainContent.classList.add('hidden');
+            dashboardMessage.classList.remove('hidden');
+            return;
+        };
+
+        dashboardMainContent.classList.remove('hidden');
+        dashboardMessage.classList.add('hidden');
+        
+        const rangeText = { week: 'This Week', month: 'This Month', year: 'This Year', all: 'All Time' };
+        dashboardTitle.textContent = `Dashboard (${rangeText[viewOptions.dashboardDateRange]})`;
+        
+        const { currentPeriod, prevPeriod } = getDateRanges(viewOptions.dashboardDateRange);
+        const allEntries = activeJournal.entries;
+        const currentEntries = allEntries.filter(e => {
+            const entryDate = new Date(e.date);
+            return entryDate >= currentPeriod.start && entryDate <= currentPeriod.end;
+        });
+        const prevEntries = allEntries.filter(e => {
+            const entryDate = new Date(e.date);
+            return entryDate >= prevPeriod.start && entryDate <= prevPeriod.end;
+        });
+
+        const currentIncome = currentEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0);
+        const currentExpense = currentEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0);
+        const currentNet = currentIncome - currentExpense;
+        
+        const prevIncome = prevEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0);
+        const prevExpense = prevEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0);
+        const prevNet = prevIncome - prevExpense;
+
+        kpiIncomeEl.textContent = formatAmountForDashboard(currentIncome);
+        kpiExpenseEl.textContent = formatAmountForDashboard(currentExpense);
+        kpiNetEl.textContent = formatAmountForDashboard(currentNet);
+
+        kpiIncomeCompEl.innerHTML = getComparisonHTML(currentIncome, prevIncome);
+        kpiExpenseCompEl.innerHTML = getComparisonHTML(currentExpense, prevExpense, true); // Invert for expense
+        kpiNetCompEl.innerHTML = getComparisonHTML(currentNet, prevNet);
+
+        updateChartButtonStyles();
+        
+        const interval = viewOptions.dashboardDateRange === 'year' || viewOptions.dashboardDateRange === 'all' ? 'month' : 'day';
+        
+        const groupedIncome = groupDataByInterval(currentEntries.filter(e => e.type === 'Income'), interval, currentPeriod);
+        incomeBarChartInstance = renderBarChart(incomeBarChartInstance, incomeBarChartCanvas, 'Income Over Time', groupedIncome, '#84cc16');
+
+        const groupedExpense = groupDataByInterval(currentEntries.filter(e => e.type === 'Expense'), interval, currentPeriod);
+        expenseBarChartInstance = renderBarChart(expenseBarChartInstance, expenseBarChartCanvas, 'Expense Over Time', groupedExpense, '#ef4444');
+        
+        const netBalanceData = calculateNetBalanceOverTime(currentEntries, interval, currentPeriod);
+        netBalanceAreaChartInstance = renderAreaChart(netBalanceAreaChartInstance, netBalanceAreaChartCanvas, 'Net Balance Over Time', netBalanceData);
+        
+        donutChartInstance = renderDonutChart(donutChartInstance, donutChartCanvas, currentEntries, viewOptions.chartDataType);
+    }
+    
+    function getComparisonHTML(current, previous, invert = false) {
+        if (previous === 0) {
+            return current > 0 ? `<span class="text-lime-600">↑ New</span>` : `<span class="text-gray-500">-</span>`;
+        }
+        const percentChange = ((current - previous) / previous) * 100;
+        const isUp = percentChange > 0;
+        const isDown = percentChange < 0;
+        
+        let colorClass = 'text-gray-500'; // No change
+        if ((isUp && !invert) || (isDown && invert)) colorClass = 'text-lime-600';
+        if ((isDown && !invert) || (isUp && invert)) colorClass = 'text-red-600';
+
+        const arrow = isUp ? '↑' : '↓';
+        const formattedPercent = Math.abs(percentChange).toFixed(0);
+
+        if (Math.abs(formattedPercent) < 1) return `<span class="text-gray-500">~ 0%</span>`;
+
+        return `<span class="${colorClass}">${arrow} ${formattedPercent}% vs previous period</span>`;
+    }
+
+    function getDateRanges(rangeKey) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let currentPeriod = { start: new Date(), end: new Date() };
+        let prevPeriod = { start: new Date(), end: new Date() };
+
+        switch (rangeKey) {
+            case 'week':
+                currentPeriod.start = new Date(today);
+                currentPeriod.start.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+                currentPeriod.end = new Date(currentPeriod.start);
+                currentPeriod.end.setDate(currentPeriod.start.getDate() + 6);
+                prevPeriod.start = new Date(currentPeriod.start);
+                prevPeriod.start.setDate(currentPeriod.start.getDate() - 7);
+                prevPeriod.end = new Date(currentPeriod.end);
+                prevPeriod.end.setDate(currentPeriod.end.getDate() - 7);
+                break;
+            case 'year':
+                currentPeriod.start = new Date(today.getFullYear(), 0, 1);
+                currentPeriod.end = new Date(today.getFullYear(), 11, 31);
+                prevPeriod.start = new Date(today.getFullYear() - 1, 0, 1);
+                prevPeriod.end = new Date(today.getFullYear() - 1, 11, 31);
+                break;
+            case 'all':
+                const allEntries = appData.journals[appData.activeJournalId].entries;
+                if (allEntries.length > 0) {
+                    const firstDate = new Date(allEntries.sort((a, b) => new Date(a.date) - new Date(b.date))[0].date);
+                    currentPeriod.start = new Date(firstDate.getFullYear(), 0, 1);
+                } else {
+                    currentPeriod.start = new Date(today.getFullYear(), 0, 1);
+                }
+                currentPeriod.end = new Date(today.getFullYear(), 11, 31);
+                prevPeriod.start = new Date(currentPeriod.start);
+                prevPeriod.start.setFullYear(prevPeriod.start.getFullYear() - 1);
+                prevPeriod.end = new Date(currentPeriod.end);
+                prevPeriod.end.setFullYear(prevPeriod.end.getFullYear() - 1);
+                break;
+            case 'month':
+            default:
+                currentPeriod.start = new Date(today.getFullYear(), today.getMonth(), 1);
+                currentPeriod.end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                prevPeriod.start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                prevPeriod.end = new Date(today.getFullYear(), today.getMonth(), 0);
+                break;
+        }
+        return { currentPeriod, prevPeriod };
+    }
+    
+    function updateChartButtonStyles() {
+        kpiRangeBtns.forEach(btn => {
+            if (btn.dataset.range === viewOptions.dashboardDateRange) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        Object.values(chartTypeBtns).forEach(btn => btn.classList.remove('active'));
+        chartTypeBtns[viewOptions.chartDataType].classList.add('active');
+    }
+
+    function renderDonutChart(instance, canvas, entries, type) {
+        if (instance) instance.destroy();
+
+        const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
+
+        const dataMap = entries
+            .filter(e => e.type === capitalizedType)
+            .reduce((acc, entry) => {
+                const key = entry.method || 'Other';
+                acc[key] = (acc[key] || 0) + entry.amount;
+                return acc;
+            }, {});
+
+        const labels = Object.keys(dataMap);
+        const data = Object.values(dataMap);
+        
+        const noDataMessage = capitalizedType === 'Income' ? 'No income data for this period.' : 'No expense data for this period.';
+        if (labels.length === 0) {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '14px "Inter", sans-serif';
+            ctx.fillText(noDataMessage, canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+            return null;
+        }
+
+        const colorPalettes = {
+            Expense: ['#f97316', '#2563eb'], // Orange, Blue
+            Income: ['#84cc16', '#22c55e']  // Lime, Green
+        };
+
+        return new Chart(canvas, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ label: capitalizedType, data, backgroundColor: colorPalettes[capitalizedType] }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } } }
+        });
+    }
+
+    function groupDataByInterval(entries, interval, period) {
+        const dataMap = new Map();
+        let currentDate = new Date(period.start);
+        
+        while(currentDate <= period.end) {
+            const key = interval === 'day' 
+                ? currentDate.toLocaleDateString('en-CA') // YYYY-MM-DD format
+                : `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+            dataMap.set(key, 0);
+
+            if(interval === 'day') {
+                currentDate.setDate(currentDate.getDate() + 1);
+            } else {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            }
+        }
+        
+        entries.forEach(entry => {
+            const entryDate = new Date(entry.date);
+            entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset()); // Adjust for UTC
+            const key = interval === 'day' 
+                ? entryDate.toLocaleDateString('en-CA')
+                : `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}`;
+            
+            if(dataMap.has(key)) {
+                dataMap.set(key, dataMap.get(key) + entry.amount);
+            }
+        });
+
+        const labels = [...dataMap.keys()].map(key => {
+            if(interval === 'day') {
+                const [y, m, d] = key.split('-');
+                return `${d}/${m}`;
+            }
+            const [y, m] = key.split('-');
+            return new Date(y, m-1).toLocaleString('default', { month: 'short' });
+        });
+        
+        return { labels, data: [...dataMap.values()]};
+    }
+
+    function calculateNetBalanceOverTime(entries, interval, period) {
+        const sortedEntries = [...entries].sort((a,b) => new Date(a.date) - new Date(b.date));
+        const balanceMap = new Map();
+        let currentDate = new Date(period.start);
+        
+        while(currentDate <= period.end) {
+            const key = interval === 'day' 
+                ? currentDate.toLocaleDateString('en-CA')
+                : `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+            balanceMap.set(key, 0);
+
+            if(interval === 'day') {
+                currentDate.setDate(currentDate.getDate() + 1);
+            } else {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            }
+        }
+
+        sortedEntries.forEach(entry => {
+            const entryDate = new Date(entry.date);
+            entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset());
+            const key = interval === 'day' 
+                ? entryDate.toLocaleDateString('en-CA')
+                : `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}`;
+            
+            const value = entry.type === 'Income' ? entry.amount : -entry.amount;
+            if (balanceMap.has(key)) {
+                balanceMap.set(key, balanceMap.get(key) + value);
+            }
+        });
+
+        let cumulativeBalance = 0;
+        const finalData = [];
+        balanceMap.forEach(value => {
+            cumulativeBalance += value;
+            finalData.push(cumulativeBalance);
+        });
+
+        const labels = [...balanceMap.keys()].map(key => {
+            if(interval === 'day') {
+                const [y, m, d] = key.split('-');
+                return `${d}/${m}`;
+            }
+            const [y, m] = key.split('-');
+            return new Date(y, m-1).toLocaleString('default', { month: 'short' });
+        });
+
+        return { labels, data: finalData };
+    }
+
+    function renderBarChart(instance, canvas, label, chartData, color) {
+        if (instance) instance.destroy();
+        return new Chart(canvas, {
+            type: 'bar',
+            data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, backgroundColor: color }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label }, legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    function renderAreaChart(instance, canvas, label, chartData) {
+        if (instance) instance.destroy();
+        return new Chart(canvas, {
+            type: 'line',
+            data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, fill: true, borderColor: '#4338ca', backgroundColor: 'rgba(79, 70, 229, 0.1)', tension: 0.3 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label }, legend: { display: false } }, scales: { y: { beginAtZero: false } } }
+        });
+    }
+
+
+    function parseAndValidateDate(dateInputStr) {
+        const dateParts = dateInputStr.split('/');
+        if (dateParts.length !== 3 || dateParts[0].length !== 2 || dateParts[1].length !== 2 || dateParts[2].length !== 4) {
+            showToast("Invalid date format. Please use DD/MM/YYYY.", 'error'); return null;
+        }
+        const [day, month, year] = dateParts.map(p => parseInt(p, 10));
+        const dateObj = new Date(year, month - 1, day);
+        if (isNaN(dateObj.getTime()) || dateObj.getFullYear() !== year || dateObj.getMonth() + 1 !== month || dateObj.getDate() !== day) {
+            showToast("Invalid date. Please check the day, month, and year.", 'error'); return null;
+        }
+        return getFormattedDate(dateObj, 'yyyy-mm-dd');
+    }
+
+    function resetAllFilters() {
+        sortBySelect.value = 'date_desc'; 
+        filterTypeSelect.value = 'all';
+        filterMethodSelect.value = 'all'; 
+        searchInput.value = '';
+        startDateInput.value = '';
+        endDateInput.value = '';
+        viewOptions = {
+            ...viewOptions,
+            sortBy: 'date_desc', 
+            filterByType: 'all', 
+            filterByMethod: 'all', 
+            searchTerm: '',
+            startDate: null,
+            endDate: null,
+            currentPage: 1,
+            dashboardDateRange: 'month',
+        };
+        selectedEntryIds.clear();
+        renderTable();
+    }
+
+    // --- CRUD OPERATIONS ---
+    function createNewJournal() {
+        const journalName = window.prompt("Enter a name for the new journal:", "New Journal");
+        if (!journalName || journalName.trim() === '') return; 
+        const newId = `journal_${Date.now()}`;
+        appData.journals[newId] = { name: journalName.trim(), entries: [], lastModified: new Date().toISOString() };
+        appData.activeJournalId = newId;
+        saveDataToFirestore().then(() => showToast("Journal created!", "success"));
+    }
+
+    function renameActiveJournal() {
+        const activeJournal = appData.journals[appData.activeJournalId];
+        if (!activeJournal) return;
+        const newName = window.prompt("Enter new name for the journal:", activeJournal.name);
+        if (newName && newName.trim() !== '') {
+            activeJournal.name = newName.trim();
+            saveDataToFirestore(true).then(() => showToast("Journal renamed!", "success"));
+        }
+    }
+
+    function deleteActiveJournal() {
+        const journalId = appData.activeJournalId;
+        const journalName = appData.journals[journalId]?.name;
+        if (!journalId || !journalName) return;
+        delete appData.journals[journalId];
+        const remainingIds = Object.keys(appData.journals);
+        appData.activeJournalId = remainingIds.length > 0 ? remainingIds[0] : null;
+        saveDataToFirestore().then(() => showToast(`'${journalName}' deleted.`, "info"));
+    }
+
+    function addEntry(e) {
+        e.preventDefault();
+        const activeJournal = appData.journals[appData.activeJournalId];
+        if (!activeJournal) return;
+        const formattedDate = parseAndValidateDate(dateInput.value);
+        if (!formattedDate) return;
+
+        if (!activeJournal.entries) activeJournal.entries = [];
+        activeJournal.entries.push({
+          id: `entry_${Date.now()}`, date: formattedDate,
+          type: typeSelect.value, method: methodSelect.value,
+          narration: document.getElementById('narration').value.trim(),
+          amount: parseFloat(document.getElementById('amount').value)
+        });
+        saveDataToFirestore(true).then(() => showToast("Entry added", "success"));
+        entryForm.reset();
+        dateInput.value = getFormattedDate(new Date());
+    }
+
+    function openEditModal(entryId) {
+        const entry = appData.journals[appData.activeJournalId]?.entries.find(e => e.id === entryId);
+        if (!entry) return;
+        document.getElementById('editEntryId').value = entry.id;
+        editDateInput.value = getFormattedDate(entry.date, 'dd/mm/yyyy');
+        document.getElementById('editType').value = entry.type;
+        document.getElementById('editMethod').value = entry.method;
+        document.getElementById('editNarration').value = entry.narration;
+        document.getElementById('editAmount').value = entry.amount;
+        editEntryModal.classList.remove('hidden');
+    }
+
+    function updateEntry(e) {
+        e.preventDefault();
+        const activeJournal = appData.journals[appData.activeJournalId];
+        const entryId = document.getElementById('editEntryId').value;
+        if (!activeJournal || !entryId) return;
+        const formattedDate = parseAndValidateDate(editDateInput.value);
+        if (!formattedDate) return;
+        const entryIndex = activeJournal.entries.findIndex(e => e.id === entryId);
+        if (entryIndex === -1) return;
+
+        activeJournal.entries[entryIndex] = {
+            id: entryId, date: formattedDate,
+            type: document.getElementById('editType').value,
+            method: document.getElementById('editMethod').value,
+            narration: document.getElementById('editNarration').value.trim(),
+            amount: parseFloat(document.getElementById('editAmount').value)
+        };
+        saveDataToFirestore(true).then(() => showToast("Entry updated", "success"));
+        editEntryModal.classList.add('hidden');
+    }
+
+    function deleteEntry(entryId) {
+        const activeJournal = appData.journals[appData.activeJournalId];
+        if (!activeJournal) return;
+        activeJournal.entries = activeJournal.entries.filter(entry => entry.id !== entryId);
+        saveDataToFirestore(true).then(() => showToast("Entry deleted", "info"));
+    }
+
+    function updateBulkDeleteButton() {
+        const count = selectedEntryIds.size;
+        bulkDeleteBtn.textContent = `Delete Selected (${count})`;
+        bulkDeleteBtn.classList.toggle('hidden', count === 0);
+    }
+
+    function bulkDeleteEntries() {
+        const activeJournal = appData.journals[appData.activeJournalId];
+        if (!activeJournal) return;
+        
+        const count = selectedEntryIds.size;
+        activeJournal.entries = activeJournal.entries.filter(entry => !selectedEntryIds.has(entry.id));
+        selectedEntryIds.clear();
+        
+        saveDataToFirestore(true).then(() => showToast(`${count} entries deleted`, "info"));
+    }
+    
+    function showConfirmationModal(message, onConfirm) {
+        modalMessage.textContent = message;
+        confirmCallback = onConfirm;
+        confirmationModal.classList.remove('hidden');
+    }
+    
+    // --- TAB CONTROL LOGIC ---
+    const handleTabSwitch = (activeTabKey) => {
+        Object.values(tabContents).forEach(content => content.classList.add('hidden'));
+        Object.values(tabButtons).forEach(button => {
+            button.classList.remove('bg-orange-500', 'text-white');
+            button.classList.add('text-gray-500', 'hover:bg-gray-200');
+        });
+        tabContents[activeTabKey].classList.remove('hidden');
+        tabButtons[activeTabKey].classList.add('bg-orange-500', 'text-white');
+        tabButtons[activeTabKey].classList.remove('text-gray-500', 'hover:bg-gray-200');
+    };
+
+    Object.keys(tabButtons).forEach(key => {
+        tabButtons[key].addEventListener('click', () => handleTabSwitch(key));
+    });
+
+    Object.keys(chartTypeBtns).forEach(key => {
+        chartTypeBtns[key].addEventListener('click', () => {
+            viewOptions.chartDataType = key;
+            renderDashboard();
+        });
+    });
+    
+    kpiRangeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            viewOptions.dashboardDateRange = btn.dataset.range;
+            renderDashboard();
+        })
+    });
+    
+    // --- EVENT LISTENERS ---
+    userMenuButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        userMenu.classList.toggle('hidden');
+    });
+
+    window.addEventListener('click', (e) => {
+        if (!userMenu.classList.contains('hidden') && !userMenuButton.contains(e.target)) {
+            userMenu.classList.add('hidden');
+        }
+    });
+
+    searchInput.addEventListener('input', (e) => {
+        viewOptions.searchTerm = e.target.value;
+        viewOptions.currentPage = 1;
+        renderTable();
+    });
+    
+    [sortBySelect, filterTypeSelect, filterMethodSelect].forEach(el => {
+        el.addEventListener('change', () => {
+            viewOptions.sortBy = sortBySelect.value;
+            viewOptions.filterByType = filterTypeSelect.value;
+            viewOptions.filterByMethod = filterMethodSelect.value;
+            viewOptions.currentPage = 1;
+            renderTable();
+        });
+    });
+
+    filterByDateBtn.addEventListener('click', () => {
+        viewOptions.startDate = startDateInput.value;
+        viewOptions.endDate = endDateInput.value;
+        viewOptions.currentPage = 1;
+        renderTable();
+    });
+
+    clearDateFilterBtn.addEventListener('click', () => {
+        startDateInput.value = '';
+        endDateInput.value = '';
+        viewOptions.startDate = null;
+        viewOptions.endDate = null;
+        viewOptions.currentPage = 1;
+        renderTable();
+    });
+
+    resetFiltersBtn.addEventListener('click', resetAllFilters);
+
+    journalSelector.addEventListener('change', (e) => {
+        appData.activeJournalId = e.target.value;
+        saveDataToFirestore();
+    });
+
+    prevPageBtn.addEventListener('click', () => {
+        if (viewOptions.currentPage > 1) {
+            viewOptions.currentPage--;
+            renderTable();
+        }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+        viewOptions.currentPage++;
+        renderTable();
+    });
+    
+    entryForm.addEventListener('submit', addEntry);
+    editEntryForm.addEventListener('submit', updateEntry);
+    createJournalBtn.addEventListener('click', createNewJournal);
+    renameJournalBtn.addEventListener('click', renameActiveJournal);
+    deleteJournalBtn.addEventListener('click', () => {
+        const name = appData.journals[appData.activeJournalId]?.name;
+        if(name) showConfirmationModal(`Delete '${name}' and all its entries? This cannot be undone.`, deleteActiveJournal);
+    });
+
+    bulkDeleteBtn.addEventListener('click', () => {
+        showConfirmationModal(`Are you sure you want to delete ${selectedEntryIds.size} selected entries? This cannot be undone.`, bulkDeleteEntries);
+    });
+    
+    const handleTableClick = (e) => {
+        if (e.target.classList.contains('delete-btn')) {
+            showConfirmationModal("Are you sure you want to delete this entry?", () => deleteEntry(e.target.dataset.id));
+        }
+        if (e.target.classList.contains('edit-btn')) {
+            openEditModal(e.target.dataset.id);
+        }
+        if (e.target.classList.contains('row-checkbox')) {
+            const id = e.target.dataset.id;
+            if (e.target.checked) {
+                selectedEntryIds.add(id);
+            } else {
+                selectedEntryIds.delete(id);
+            }
+            updateBulkDeleteButton();
+        }
+    };
+    tableBody.addEventListener('click', handleTableClick);
+    recentEntriesBody.addEventListener('click', handleTableClick);
+
+    selectAllCheckbox.addEventListener('change', (e) => {
+        const checkboxes = tableBody.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(checkbox => {
+            const id = checkbox.dataset.id;
+            checkbox.checked = e.target.checked;
+            if (e.target.checked) {
+                selectedEntryIds.add(id);
+            } else {
+                selectedEntryIds.delete(id);
+            }
+        });
+        updateBulkDeleteButton();
+    });
+
+    modalConfirmBtn.addEventListener('click', () => {
+        if (typeof confirmCallback === 'function') {
+            confirmCallback();
+            confirmCallback = null;
+        }
+        confirmationModal.classList.add('hidden');
+    });
+
+    modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
+    editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden'));
+
+    importBackupBtn.addEventListener('click', () => fileImporter.click());
+    fileImporter.addEventListener('change', (event) => {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (importedData && importedData.journals && importedData.activeJournalId) {
+                    showConfirmationModal(
+                        "This will overwrite ALL your cloud data with this backup. This cannot be undone.",
+                        () => {
+                            appData = importedData;
+                            saveDataToFirestore().then(() => showToast("Backup imported successfully!", "success"));
+                        }
+                    );
+                } else { throw new Error("Invalid backup file format."); }
+            } catch (err) { showToast(err.message, "error"); }
+        };
+        reader.readAsText(file);
+        event.target.value = null; 
+    });
+    
+    downloadBackupBtn.addEventListener('click', () => {
+        if (!currentUser) return;
+        const dataStr = JSON.stringify(appData, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `tck_backup_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    downloadBtn.addEventListener('click', async () => {
+        const activeJournal = appData.journals[appData.activeJournalId];
+        if (!activeJournal || !activeJournal.entries || activeJournal.entries.length === 0) return;
+
+        downloadBtn.disabled = true;
+        showToast('Preparing your workbook...', 'info');
+
+        try {
+            const pyodide = await loadPy();
+            pyodide.globals.set('entries_json', JSON.stringify(activeJournal.entries));
+            pyodide.globals.set('journal_name_js', activeJournal.name);
+            const base64Data = await pyodide.runPythonAsync(`
+import json, io, base64
+from datetime import datetime
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from itertools import groupby
+from collections import defaultdict
+wb = Workbook()
+ws = wb.active
+ws.title = 'I&E Statement'
+MIN_ROWS_PER_MONTH = 35
+header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFFFF')
+subheader_font = Font(name='Calibri', size=11, bold=True)
+vertical_month_font = Font(name='Calibri', size=28, bold=True)
+data_font = Font(name='Calibri', size=11)
+center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+vertical_align = Alignment(text_rotation=90, vertical='center', horizontal='center')
+blue_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+orange_fill = PatternFill(start_color='ED7D31', end_color='ED7D31', fill_type='solid')
+black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')
+thin_side = Side(style='thin', color='000000')
+thin_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+currency_format = '"UGX"* #,##0'
+def create_month_table(worksheet, start_row, month_name, income_entries, expense_entries):
+    worksheet.merge_cells(start_row=start_row, start_column=3, end_row=start_row, end_column=6); cell = worksheet.cell(start_row, 3); cell.value = 'INCOME'; cell.fill = blue_fill; cell.font = header_font; cell.alignment = center_align
+    worksheet.merge_cells(start_row=start_row, start_column=8, end_row=start_row, end_column=11); cell = worksheet.cell(start_row, 8); cell.value = 'EXPENSES'; cell.fill = orange_fill; cell.font = header_font; cell.alignment = center_align
+    worksheet.merge_cells(start_row=start_row+1, start_column=4, end_row=start_row+1, end_column=5); worksheet.merge_cells(start_row=start_row+1, start_column=9, end_row=start_row+1, end_column=10)
+    headers3 = {'C':'Date', 'D':'Amount', 'F':'Narration', 'H':'Date', 'I':'Amount', 'K':'Reason'}
+    for col_char, text in headers3.items():
+        cell = worksheet[f'{col_char}{start_row+1}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
+    headers4 = {'D':'Mobile Money', 'E':'Bank', 'I':'Mobile Money', 'J':'Bank'}
+    for col_char, text in headers4.items():
+        cell = worksheet[f'{col_char}{start_row+2}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
+    current_income_row = start_row + 3
+    for date, group in groupby(income_entries, key=lambda x: x.get('date')):
+        group_list = list(group)
+        num_entries = len(group_list)
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        date_cell = worksheet.cell(row=current_income_row, column=3, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align
+        if num_entries > 1: worksheet.merge_cells(start_row=current_income_row, start_column=3, end_row=current_income_row + num_entries - 1, end_column=3)
+        for i, entry in enumerate(group_list):
+            row_idx = current_income_row + i
+            worksheet[f'F{row_idx}'].value = entry.get('narration'); worksheet[f'F{row_idx}'].font = data_font
+            col = 'D' if entry.get('method') == 'Mobile Money' else 'E' if entry.get('method') == 'Bank' else ''
+            if col: cell = worksheet[f'{col}{row_idx}']; cell.value = entry.get('amount'); cell.number_format = currency_format; cell.font = data_font
+        current_income_row += num_entries
+    current_expense_row = start_row + 3
+    for date, group in groupby(expense_entries, key=lambda x: x.get('date')):
+        group_list = list(group)
+        num_entries = len(group_list)
+        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        date_cell = worksheet.cell(row=current_expense_row, column=8, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align
+        if num_entries > 1: worksheet.merge_cells(start_row=current_expense_row, start_column=8, end_row=current_expense_row + num_entries - 1, end_column=8)
+        for i, entry in enumerate(group_list):
+            row_idx = current_expense_row + i
+            worksheet[f'K{row_idx}'].value = entry.get('narration'); worksheet[f'K{row_idx}'].font = data_font
+            col = 'I' if entry.get('method') == 'Mobile Money' else 'J' if entry.get('method') == 'Bank' else ''
+            if col: cell = worksheet[f'{col}{row_idx}']; cell.value = entry.get('amount'); cell.number_format = currency_format; cell.font = data_font
+        current_expense_row += num_entries
+    table_end_row = max(current_income_row, current_expense_row, start_row + MIN_ROWS_PER_MONTH)
+    for r in range(start_row, table_end_row):
+        worksheet[f'G{r}'].fill = black_fill
+        for c_ord in range(ord('C'), ord('L')):
+            worksheet.cell(row=r, column=c_ord - ord('A') + 1).border = thin_border
+    data_start_row = start_row + 3
+    if data_start_row < table_end_row:
+        worksheet.merge_cells(start_row=data_start_row, start_column=1, end_row=table_end_row - 1, end_column=1)
+        cell = worksheet.cell(row=data_start_row, column=1); cell.value = month_name.upper(); cell.font = vertical_month_font; cell.alignment = vertical_align
+    return table_end_row
+entries = sorted([e for e in json.loads(entries_json) if e.get('date')], key=lambda x: x['date'])
+monthly_data = defaultdict(lambda: {'income': [], 'expense': []})
+for entry in entries:
+    month_key = datetime.strptime(entry['date'], '%Y-%m-%d').strftime('%Y-%m')
+    if entry['type'] == 'Income': monthly_data[month_key]['income'].append(entry)
+    else: monthly_data[month_key]['expense'].append(entry)
+current_row = 2
+if not monthly_data: create_month_table(ws, current_row, journal_name_js, [], [])
+else:
+    for month_key in sorted(monthly_data.keys()):
+        month_name = datetime.strptime(month_key, '%Y-%m').strftime('%B')
+        data = monthly_data[month_key]
+        current_row = create_month_table(ws, current_row, month_name, data['income'], data['expense']) + 3
+column_widths = {'A': 5, 'B': 1, 'C': 12, 'D': 15, 'E': 15, 'F': 30, 'G': 1.5, 'H': 12, 'I': 15, 'J': 15, 'K': 30}
+for col, width in column_widths.items(): ws.column_dimensions[col].width = width
+bio = io.BytesIO(); wb.save(bio)
+base64.b64encode(bio.getvalue()).decode('utf-8')
+`);
+            showToast('Download starting...', 'success');
+            const blob = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+            const url = URL.createObjectURL(new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${activeJournal.name.replace(/ /g, '_')}_Journal.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Error generating file:', err);
+            showToast('Error! Could not generate file.', 'error');
+        } finally {
+            downloadBtn.disabled = getFilteredEntries().length === 0;
+            statusMessage.textContent = '';
+        }
+    });
+    
+    dateInput.addEventListener('input', autoFormatDate);
+    editDateInput.addEventListener('input', autoFormatDate);
+
+  </script>
+</body>
+</html>
