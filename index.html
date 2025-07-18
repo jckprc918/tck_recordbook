@@ -160,17 +160,17 @@
                         <div class="bg-white rounded-xl shadow p-5">
                             <p class="text-sm font-medium text-gray-500">Total Income</p>
                             <p id="kpi-income" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
-                            <p id="kpi-income-comp" class="text-xs text-gray-500 mt-1">&nbsp;</p>
+                            <p id="kpi-income-comp" class="text-xs text-gray-500 mt-1"> </p>
                         </div>
                         <div class="bg-white rounded-xl shadow p-5">
                             <p class="text-sm font-medium text-gray-500">Total Expense</p>
                             <p id="kpi-expense" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
-                            <p id="kpi-expense-comp" class="text-xs text-gray-500 mt-1">&nbsp;</p>
+                            <p id="kpi-expense-comp" class="text-xs text-gray-500 mt-1"> </p>
                         </div>
                         <div class="bg-white rounded-xl shadow p-5">
                             <p class="text-sm font-medium text-gray-500">Net Balance</p>
                             <p id="kpi-net" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
-                            <p id="kpi-net-comp" class="text-xs text-gray-500 mt-1">&nbsp;</p>
+                            <p id="kpi-net-comp" class="text-xs text-gray-500 mt-1"> </p>
                         </div>
                     </div>
                     <!-- Charts Grid -->
@@ -203,7 +203,7 @@
                           <form id="entryForm" class="grid grid-cols-1 gap-4">
                             <div>
                               <label for="date" class="block text-sm font-medium text-gray-700">Date</label>
-                              <input type="text" id="date" placeholder="dd/mm/yyyy" required maxlength="10" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                              <input type="date" id="date" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
                             </div>
                             <div>
                               <label for="type" class="block text-sm font-medium text-gray-700">Entry Type</label>
@@ -423,7 +423,7 @@
                 <input type="hidden" id="editEntryId">
                 <div>
                     <label for="editDate" class="block text-sm font-medium text-gray-700">Date</label>
-                    <input type="text" id="editDate" placeholder="dd/mm/yyyy" required maxlength="10" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                    <input type="date" id="editDate" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
                 </div>
                 <div>
                     <label for="editType" class="block text-sm font-medium text-gray-700">Entry Type</label>
@@ -664,12 +664,17 @@
     // --- UTILITY & PYODIDE ---
     function getFormattedDate(date, format = 'dd/mm/yyyy') {
         const d = new Date(date);
+        // Adjust for timezone offset to prevent date from shifting
         const userTimezoneOffset = d.getTimezoneOffset() * 60000;
         const adjustedDate = new Date(d.getTime() + userTimezoneOffset);
         const yyyy = adjustedDate.getFullYear();
         const mm = String(adjustedDate.getMonth() + 1).padStart(2, '0');
         const dd = String(adjustedDate.getDate()).padStart(2, '0');
-        return format === 'yyyy-mm-dd' ? `${yyyy}-${mm}-${dd}` : `${dd}/${mm}/${yyyy}`;
+        
+        if (format === 'yyyy-mm-dd') {
+            return `${yyyy}-${mm}-${dd}`;
+        }
+        return `${dd}/${mm}/${yyyy}`;
     }
 
     function formatTimeAgo(isoString) {
@@ -701,23 +706,6 @@
         }
         return `${sign}UGX ${formattedValue}`;
     }
-
-    function autoFormatDate(event) {
-        const input = event.target;
-        let value = input.value.replace(/\D/g, '');
-        if (event.inputType === 'deleteContentBackward') {
-            input.value = value;
-            return;
-        }
-        value = value.substring(0, 8);
-        if (value.length > 4) {
-            value = `${value.substring(0, 2)}/${value.substring(2, 4)}/${value.substring(4)}`;
-        } else if (value.length > 2) {
-            value = `${value.substring(0, 2)}/${value.substring(2)}`;
-        }
-        input.value = value;
-    }
-
 
     let pyodideReadyPromise;
     async function loadPy() {
@@ -888,7 +876,8 @@
     function setActiveJournal(journalId) {
         appData.activeJournalId = journalId;
         journalSelector.value = journalId;
-        dateInput.value = getFormattedDate(new Date());
+        // Set date picker to today's date in 'YYYY-MM-DD' format
+        dateInput.value = getFormattedDate(new Date(), 'yyyy-mm-dd');
         const selectedJournal = appData.journals[journalId];
         entriesTitle.textContent = `Entries for: ${selectedJournal.name}`;
         [addEntryBtn, deleteJournalBtn, createJournalBtn, renameJournalBtn, downloadBackupBtn, importBackupBtn, searchInput].forEach(el => el.disabled = false);
@@ -1302,19 +1291,18 @@
         });
     }
 
-
     function parseAndValidateDate(dateInputStr) {
-        const dateParts = dateInputStr.split('/');
-        if (dateParts.length !== 3 || dateParts[0].length !== 2 || dateParts[1].length !== 2 || dateParts[2].length !== 4) {
-            showToast("Invalid date format. Please use DD/MM/YYYY.", 'error'); return null;
+        // The native date picker provides a 'YYYY-MM-DD' string.
+        // This function now primarily validates that the value isn't empty.
+        // The browser's date picker itself prevents invalid date formats.
+        if (!dateInputStr) {
+            showToast("Date cannot be empty.", 'error');
+            return null;
         }
-        const [day, month, year] = dateParts.map(p => parseInt(p, 10));
-        const dateObj = new Date(year, month - 1, day);
-        if (isNaN(dateObj.getTime()) || dateObj.getFullYear() !== year || dateObj.getMonth() + 1 !== month || dateObj.getDate() !== day) {
-            showToast("Invalid date. Please check the day, month, and year.", 'error'); return null;
-        }
-        return getFormattedDate(dateObj, 'yyyy-mm-dd');
+        // The value is already in the correct 'YYYY-MM-DD' format.
+        return dateInputStr;
     }
+
 
     function resetAllFilters() {
         sortBySelect.value = 'date_desc'; 
@@ -1382,16 +1370,20 @@
           narration: document.getElementById('narration').value.trim(),
           amount: parseFloat(document.getElementById('amount').value)
         });
-        saveDataToFirestore(true).then(() => showToast("Entry added", "success"));
-        entryForm.reset();
-        dateInput.value = getFormattedDate(new Date());
+        saveDataToFirestore(true).then(() => {
+            showToast("Entry added", "success");
+            entryForm.reset();
+            // After resetting, set the date back to today
+            dateInput.value = getFormattedDate(new Date(), 'yyyy-mm-dd');
+        });
     }
 
     function openEditModal(entryId) {
         const entry = appData.journals[appData.activeJournalId]?.entries.find(e => e.id === entryId);
         if (!entry) return;
         document.getElementById('editEntryId').value = entry.id;
-        editDateInput.value = getFormattedDate(entry.date, 'dd/mm/yyyy');
+        // The stored date is already in YYYY-MM-DD format, which the date picker needs
+        editDateInput.value = entry.date;
         document.getElementById('editType').value = entry.type;
         document.getElementById('editMethod').value = entry.method;
         document.getElementById('editNarration').value = entry.narration;
@@ -1750,9 +1742,6 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
             statusMessage.textContent = '';
         }
     });
-    
-    dateInput.addEventListener('input', autoFormatDate);
-    editDateInput.addEventListener('input', autoFormatDate);
 
   </script>
 </body>
