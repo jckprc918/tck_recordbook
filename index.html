@@ -215,8 +215,9 @@
                             <div>
                               <label for="method" class="block text-sm font-medium text-gray-700">Source / Method</label>
                               <select id="method" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
-                                <option value="Mobile Money">Mobile Money</option>
-                                <option value="Bank">Bank</option>
+                                <option value="MTN">MTN</option>
+                                <option value="Airtel">Airtel</option>
+                                <option value="Bank" selected>Bank</option>
                               </select>
                             </div>
                             <div>
@@ -324,7 +325,8 @@
                           <label for="filter-method" class="block text-sm font-medium text-gray-700">Method</label>
                           <select id="filter-method" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
                               <option value="all">All</option>
-                              <option value="Mobile Money">Mobile Money</option>
+                              <option value="MTN">MTN</option>
+                              <option value="Airtel">Airtel</option>
                               <option value="Bank">Bank</option>
                           </select>
                       </div>
@@ -435,7 +437,8 @@
                 <div>
                     <label for="editMethod" class="block text-sm font-medium text-gray-700">Source / Method</label>
                     <select id="editMethod" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
-                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="MTN">MTN</option>
+                        <option value="Airtel">Airtel</option>
                         <option value="Bank">Bank</option>
                     </select>
                 </div>
@@ -532,6 +535,8 @@
     const dateInput = document.getElementById('date');
     const typeSelect = document.getElementById('type');
     const methodSelect = document.getElementById('method');
+    const narrationInput = document.getElementById('narration');
+    const amountInput = document.getElementById('amount');
     const searchInput = document.getElementById('search-input');
     const sortBySelect = document.getElementById('sort-by');
     const filterTypeSelect = document.getElementById('filter-type');
@@ -1171,8 +1176,8 @@
         }
 
         const colorPalettes = {
-            Expense: ['#f97316', '#2563eb'], // Orange, Blue
-            Income: ['#84cc16', '#22c55e']  // Lime, Green
+            Expense: ['#f97316', '#facc15', '#2563eb'], // Orange, Yellow, Blue for MTN, Airtel, Bank
+            Income: ['#84cc16', '#22c55e', '#10b981']  // Lime, Green, Teal for MTN, Airtel, Bank
         };
 
         return new Chart(canvas, {
@@ -1292,14 +1297,10 @@
     }
 
     function parseAndValidateDate(dateInputStr) {
-        // The native date picker provides a 'YYYY-MM-DD' string.
-        // This function now primarily validates that the value isn't empty.
-        // The browser's date picker itself prevents invalid date formats.
         if (!dateInputStr) {
             showToast("Date cannot be empty.", 'error');
             return null;
         }
-        // The value is already in the correct 'YYYY-MM-DD' format.
         return dateInputStr;
     }
 
@@ -1363,18 +1364,30 @@
         const formattedDate = parseAndValidateDate(dateInput.value);
         if (!formattedDate) return;
 
+        const lastUsedDate = dateInput.value;
+        const lastUsedType = typeSelect.value;
+        const lastUsedMethod = methodSelect.value;
+
         if (!activeJournal.entries) activeJournal.entries = [];
         activeJournal.entries.push({
           id: `entry_${Date.now()}`, date: formattedDate,
-          type: typeSelect.value, method: methodSelect.value,
-          narration: document.getElementById('narration').value.trim(),
-          amount: parseFloat(document.getElementById('amount').value)
+          type: lastUsedType,
+          method: lastUsedMethod,
+          narration: narrationInput.value.trim(),
+          amount: parseFloat(amountInput.value)
         });
+
         saveDataToFirestore(true).then(() => {
             showToast("Entry added", "success");
-            entryForm.reset();
-            // After resetting, set the date back to today
-            dateInput.value = getFormattedDate(new Date(), 'yyyy-mm-dd');
+            
+            narrationInput.value = '';
+            amountInput.value = '';
+            
+            dateInput.value = lastUsedDate;
+            typeSelect.value = lastUsedType;
+            methodSelect.value = lastUsedMethod;
+
+            narrationInput.focus();
         });
     }
 
@@ -1382,7 +1395,6 @@
         const entry = appData.journals[appData.activeJournalId]?.entries.find(e => e.id === entryId);
         if (!entry) return;
         document.getElementById('editEntryId').value = entry.id;
-        // The stored date is already in YYYY-MM-DD format, which the date picker needs
         editDateInput.value = entry.date;
         document.getElementById('editType').value = entry.type;
         document.getElementById('editMethod').value = entry.method;
@@ -1637,6 +1649,8 @@
             const pyodide = await loadPy();
             pyodide.globals.set('entries_json', JSON.stringify(activeJournal.entries));
             pyodide.globals.set('journal_name_js', activeJournal.name);
+            
+            // CHANGE 1: Modified Python script with right-aligned narration
             const base64Data = await pyodide.runPythonAsync(`
 import json, io, base64
 from datetime import datetime
@@ -1644,15 +1658,14 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from itertools import groupby
 from collections import defaultdict
-wb = Workbook()
-ws = wb.active
-ws.title = 'I&E Statement'
-MIN_ROWS_PER_MONTH = 35
+
+# --- Styling Definitions ---
 header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFFFF')
 subheader_font = Font(name='Calibri', size=11, bold=True)
 vertical_month_font = Font(name='Calibri', size=28, bold=True)
 data_font = Font(name='Calibri', size=11)
 center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+right_align = Alignment(horizontal='right', vertical='center', wrap_text=True) # <-- ADDED THIS STYLE
 vertical_align = Alignment(text_rotation=90, vertical='center', horizontal='center')
 blue_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
 orange_fill = PatternFill(start_color='ED7D31', end_color='ED7D31', fill_type='solid')
@@ -1660,17 +1673,23 @@ black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='so
 thin_side = Side(style='thin', color='000000')
 thin_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
 currency_format = '"UGX"* #,##0'
+MIN_ROWS_PER_MONTH = 35
+
+# --- Table Creation Function ---
 def create_month_table(worksheet, start_row, month_name, income_entries, expense_entries):
-    worksheet.merge_cells(start_row=start_row, start_column=3, end_row=start_row, end_column=6); cell = worksheet.cell(start_row, 3); cell.value = 'INCOME'; cell.fill = blue_fill; cell.font = header_font; cell.alignment = center_align
-    worksheet.merge_cells(start_row=start_row, start_column=8, end_row=start_row, end_column=11); cell = worksheet.cell(start_row, 8); cell.value = 'EXPENSES'; cell.fill = orange_fill; cell.font = header_font; cell.alignment = center_align
-    worksheet.merge_cells(start_row=start_row+1, start_column=4, end_row=start_row+1, end_column=5); worksheet.merge_cells(start_row=start_row+1, start_column=9, end_row=start_row+1, end_column=10)
-    headers3 = {'C':'Date', 'D':'Amount', 'F':'Narration', 'H':'Date', 'I':'Amount', 'K':'Reason'}
-    for col_char, text in headers3.items():
+    worksheet.merge_cells(start_row=start_row, start_column=3, end_row=start_row, end_column=5); cell = worksheet.cell(start_row, 3); cell.value = 'INCOME'; cell.fill = blue_fill; cell.font = header_font; cell.alignment = center_align
+    worksheet.merge_cells(start_row=start_row, start_column=7, end_row=start_row, end_column=9); cell = worksheet.cell(start_row, 7); cell.value = 'EXPENSES'; cell.fill = orange_fill; cell.font = header_font; cell.alignment = center_align
+    
+    income_headers = {'C': 'Date', 'D': 'Amount', 'E': 'Narration'}
+    expense_headers = {'G': 'Date', 'H': 'Amount', 'I': 'Narration'}
+
+    for col_char, text in income_headers.items():
         cell = worksheet[f'{col_char}{start_row+1}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
-    headers4 = {'D':'Mobile Money', 'E':'Bank', 'I':'Mobile Money', 'J':'Bank'}
-    for col_char, text in headers4.items():
-        cell = worksheet[f'{col_char}{start_row+2}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
-    current_income_row = start_row + 3
+    for col_char, text in expense_headers.items():
+        cell = worksheet[f'{col_char}{start_row+1}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
+
+    # --- Populate Income Data ---
+    current_income_row = start_row + 2
     for date, group in groupby(income_entries, key=lambda x: x.get('date')):
         group_list = list(group)
         num_entries = len(group_list)
@@ -1679,48 +1698,81 @@ def create_month_table(worksheet, start_row, month_name, income_entries, expense
         if num_entries > 1: worksheet.merge_cells(start_row=current_income_row, start_column=3, end_row=current_income_row + num_entries - 1, end_column=3)
         for i, entry in enumerate(group_list):
             row_idx = current_income_row + i
-            worksheet[f'F{row_idx}'].value = entry.get('narration'); worksheet[f'F{row_idx}'].font = data_font
-            col = 'D' if entry.get('method') == 'Mobile Money' else 'E' if entry.get('method') == 'Bank' else ''
-            if col: cell = worksheet[f'{col}{row_idx}']; cell.value = entry.get('amount'); cell.number_format = currency_format; cell.font = data_font
+            worksheet.cell(row=row_idx, column=4, value=entry.get('amount')).number_format = currency_format; worksheet.cell(row=row_idx, column=4).font = data_font
+            narration_cell = worksheet.cell(row=row_idx, column=5, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align # <-- APPLIED STYLE
         current_income_row += num_entries
-    current_expense_row = start_row + 3
+
+    # --- Populate Expense Data ---
+    current_expense_row = start_row + 2
     for date, group in groupby(expense_entries, key=lambda x: x.get('date')):
         group_list = list(group)
         num_entries = len(group_list)
         date_obj = datetime.strptime(date, '%Y-%m-%d')
-        date_cell = worksheet.cell(row=current_expense_row, column=8, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align
-        if num_entries > 1: worksheet.merge_cells(start_row=current_expense_row, start_column=8, end_row=current_expense_row + num_entries - 1, end_column=8)
+        date_cell = worksheet.cell(row=current_expense_row, column=7, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align
+        if num_entries > 1: worksheet.merge_cells(start_row=current_expense_row, start_column=7, end_row=current_expense_row + num_entries - 1, end_column=7)
         for i, entry in enumerate(group_list):
             row_idx = current_expense_row + i
-            worksheet[f'K{row_idx}'].value = entry.get('narration'); worksheet[f'K{row_idx}'].font = data_font
-            col = 'I' if entry.get('method') == 'Mobile Money' else 'J' if entry.get('method') == 'Bank' else ''
-            if col: cell = worksheet[f'{col}{row_idx}']; cell.value = entry.get('amount'); cell.number_format = currency_format; cell.font = data_font
+            worksheet.cell(row=row_idx, column=8, value=entry.get('amount')).number_format = currency_format; worksheet.cell(row=row_idx, column=8).font = data_font
+            narration_cell = worksheet.cell(row=row_idx, column=9, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align # <-- APPLIED STYLE
         current_expense_row += num_entries
+        
     table_end_row = max(current_income_row, current_expense_row, start_row + MIN_ROWS_PER_MONTH)
     for r in range(start_row, table_end_row):
-        worksheet[f'G{r}'].fill = black_fill
-        for c_ord in range(ord('C'), ord('L')):
+        worksheet[f'F{r}'].fill = black_fill
+    for r in range(start_row, table_end_row):
+      for c_ord in list(range(ord('C'), ord('F'))) + list(range(ord('G'), ord('J'))):
             worksheet.cell(row=r, column=c_ord - ord('A') + 1).border = thin_border
-    data_start_row = start_row + 3
+            
+    data_start_row = start_row + 2
     if data_start_row < table_end_row:
         worksheet.merge_cells(start_row=data_start_row, start_column=1, end_row=table_end_row - 1, end_column=1)
         cell = worksheet.cell(row=data_start_row, column=1); cell.value = month_name.upper(); cell.font = vertical_month_font; cell.alignment = vertical_align
+        
     return table_end_row
+
+# --- Main Script Logic ---
+wb = Workbook()
+ws_mtn = wb.create_sheet("MTN")
+ws_airtel = wb.create_sheet("Airtel")
+ws_bank = wb.create_sheet("Bank")
+if 'Sheet' in wb.sheetnames:
+    wb.remove(wb['Sheet'])
+
 entries = sorted([e for e in json.loads(entries_json) if e.get('date')], key=lambda x: x['date'])
-monthly_data = defaultdict(lambda: {'income': [], 'expense': []})
-for entry in entries:
-    month_key = datetime.strptime(entry['date'], '%Y-%m-%d').strftime('%Y-%m')
-    if entry['type'] == 'Income': monthly_data[month_key]['income'].append(entry)
-    else: monthly_data[month_key]['expense'].append(entry)
-current_row = 2
-if not monthly_data: create_month_table(ws, current_row, journal_name_js, [], [])
-else:
-    for month_key in sorted(monthly_data.keys()):
-        month_name = datetime.strptime(month_key, '%Y-%m').strftime('%B')
-        data = monthly_data[month_key]
-        current_row = create_month_table(ws, current_row, month_name, data['income'], data['expense']) + 3
-column_widths = {'A': 5, 'B': 1, 'C': 12, 'D': 15, 'E': 15, 'F': 30, 'G': 1.5, 'H': 12, 'I': 15, 'J': 15, 'K': 30}
-for col, width in column_widths.items(): ws.column_dimensions[col].width = width
+
+mtn_entries = [e for e in entries if e.get('method') == 'MTN']
+airtel_entries = [e for e in entries if e.get('method') == 'Airtel']
+bank_entries = [e for e in entries if e.get('method') == 'Bank']
+
+data_by_method = {
+    "MTN": (ws_mtn, mtn_entries),
+    "Airtel": (ws_airtel, airtel_entries),
+    "Bank": (ws_bank, bank_entries)
+}
+
+column_widths = {'A': 5, 'B': 1, 'C': 12, 'D': 15, 'E': 30, 'F': 1.5, 'G': 12, 'H': 15, 'I': 30}
+
+for method, (worksheet, method_entries) in data_by_method.items():
+    for col, width in column_widths.items():
+        worksheet.column_dimensions[col].width = width
+        
+    monthly_data = defaultdict(lambda: {'income': [], 'expense': []})
+    for entry in method_entries:
+        month_key = datetime.strptime(entry['date'], '%Y-%m-%d').strftime('%Y-%m')
+        if entry['type'] == 'Income':
+            monthly_data[month_key]['income'].append(entry)
+        else:
+            monthly_data[month_key]['expense'].append(entry)
+    
+    current_row = 2
+    if not monthly_data:
+        create_month_table(worksheet, current_row, "No Data", [], [])
+    else:
+        for month_key in sorted(monthly_data.keys()):
+            month_name = datetime.strptime(month_key, '%Y-%m').strftime('%B')
+            data = monthly_data[month_key]
+            current_row = create_month_table(worksheet, current_row, month_name, data['income'], data['expense']) + 3
+
 bio = io.BytesIO(); wb.save(bio)
 base64.b64encode(bio.getvalue()).decode('utf-8')
 `);
