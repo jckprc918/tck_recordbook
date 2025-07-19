@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TCK Record Book - Cloud</title>
+  
+  <!-- START: Browser Tab Icon (Favicon) -->
+  <link rel="icon" type="image/png" href="logo.png">
+  <!-- END: Browser Tab Icon (Favicon) -->
+
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Pyodide for Excel Generation -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
@@ -42,6 +47,16 @@
     .chart-btn.active, .kpi-range-btn.active {
         background-color: #f97316; /* TCK Orange */
         color: white;
+    }
+    /* Hide number input spinners */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+      appearance: textfield;
     }
   </style>
 </head>
@@ -201,10 +216,23 @@
                         <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
                           <h2 class="text-xl font-bold text-gray-800 mb-4">Add New Entry</h2>
                           <form id="entryForm" class="grid grid-cols-1 gap-4">
+                            <!-- START: New Date Input -->
                             <div>
-                              <label for="date" class="block text-sm font-medium text-gray-700">Date</label>
-                              <input type="date" id="date" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                              <label for="date-day" class="block text-sm font-medium text-gray-700">Date</label>
+                              <div class="mt-1 flex items-center gap-2 relative">
+                                <input type="number" id="date-day" placeholder="DD" min="1" max="31" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                                <span class="text-gray-400">/</span>
+                                <input type="number" id="date-month" placeholder="MM" min="1" max="12" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                                <span class="text-gray-400">/</span>
+                                <input type="number" id="date-year" placeholder="YYYY" min="1900" max="2100" required class="w-2/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                                <button type="button" id="date-picker-btn" class="p-2 rounded-lg hover:bg-gray-100">
+                                  <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </button>
+                                <!-- This hidden input is the engine for the date picker button -->
+                                <input type="date" id="native-date-picker" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer" style="z-index: -1;" />
+                              </div>
                             </div>
+                            <!-- END: New Date Input -->
                             <div>
                               <label for="type" class="block text-sm font-medium text-gray-700">Entry Type</label>
                               <select id="type" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
@@ -423,10 +451,22 @@
             <h3 class="text-xl font-bold text-gray-800 mb-4">Edit Entry</h3>
             <form id="editEntryForm" class="grid grid-cols-1 gap-4">
                 <input type="hidden" id="editEntryId">
+                <!-- START: New Edit Date Input -->
                 <div>
-                    <label for="editDate" class="block text-sm font-medium text-gray-700">Date</label>
-                    <input type="date" id="editDate" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                  <label for="edit-date-day" class="block text-sm font-medium text-gray-700">Date</label>
+                  <div class="mt-1 flex items-center gap-2 relative">
+                    <input type="number" id="edit-date-day" placeholder="DD" min="1" max="31" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                    <span class="text-gray-400">/</span>
+                    <input type="number" id="edit-date-month" placeholder="MM" min="1" max="12" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                    <span class="text-gray-400">/</span>
+                    <input type="number" id="edit-date-year" placeholder="YYYY" min="1900" max="2100" required class="w-2/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                    <button type="button" id="edit-date-picker-btn" class="p-2 rounded-lg hover:bg-gray-100">
+                      <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </button>
+                    <input type="date" id="edit-native-date-picker" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer" style="z-index: -1;" />
+                  </div>
                 </div>
+                <!-- END: New Edit Date Input -->
                 <div>
                     <label for="editType" class="block text-sm font-medium text-gray-700">Entry Type</label>
                     <select id="editType" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
@@ -476,7 +516,10 @@
         getFirestore, 
         doc, 
         setDoc, 
-        onSnapshot 
+        onSnapshot,
+        // **START: Import for Offline Persistence**
+        enableIndexedDbPersistence
+        // **END: Import for Offline Persistence**
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- FIREBASE CONFIGURATION ---
@@ -494,6 +537,25 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // **START: Enable Offline App Capability**
+    // This allows the app to work even when the internet is disconnected.
+    // It must be called before any other Firestore operations.
+    try {
+        enableIndexedDbPersistence(db)
+            .then(() => console.log("Offline persistence enabled."))
+            .catch((err) => {
+                if (err.code == 'failed-precondition') {
+                    console.warn("Offline persistence failed: Multiple tabs open?");
+                } else if (err.code == 'unimplemented') {
+                    console.warn("Offline persistence failed: Browser not supported.");
+                }
+            });
+    } catch (e) {
+        console.error("Error enabling offline persistence: ", e);
+    }
+    // **END: Enable Offline App Capability**
+
 
     // --- DOM ELEMENT REFERENCES ---
     const loginView = document.getElementById('login-view');
@@ -532,7 +594,15 @@
     const deleteJournalBtn = document.getElementById('deleteJournalBtn');
     const entriesTitle = document.getElementById('entriesTitle');
     const addEntryBtn = document.getElementById('addEntryBtn');
-    const dateInput = document.getElementById('date');
+
+    // **START: New Date Input Elements**
+    const dateDayInput = document.getElementById('date-day');
+    const dateMonthInput = document.getElementById('date-month');
+    const dateYearInput = document.getElementById('date-year');
+    const datePickerBtn = document.getElementById('date-picker-btn');
+    const nativeDatePicker = document.getElementById('native-date-picker');
+    // **END: New Date Input Elements**
+    
     const typeSelect = document.getElementById('type');
     const methodSelect = document.getElementById('method');
     const narrationInput = document.getElementById('narration');
@@ -549,7 +619,15 @@
     const editEntryModal = document.getElementById('editEntryModal');
     const editEntryForm = document.getElementById('editEntryForm');
     const editCancelBtn = document.getElementById('editCancelBtn');
-    const editDateInput = document.getElementById('editDate');
+    
+    // **START: New Edit Date Input Elements**
+    const editDateDayInput = document.getElementById('edit-date-day');
+    const editDateMonthInput = document.getElementById('edit-date-month');
+    const editDateYearInput = document.getElementById('edit-date-year');
+    const editDatePickerBtn = document.getElementById('edit-date-picker-btn');
+    const editNativeDatePicker = document.getElementById('edit-native-date-picker');
+    // **END: New Edit Date Input Elements**
+
     const recentEntriesBody = document.getElementById('recent-entries-body');
 
     // Dashboard Elements
@@ -641,7 +719,7 @@
         setTimeout(() => {
             toast.classList.add('fading-out');
             toast.addEventListener('animationend', () => toast.remove());
-        }, 3000);
+        }, 4000); // Increased duration for warnings
     }
 
     function logoutDueToInactivity() {
@@ -668,6 +746,7 @@
     
     // --- UTILITY & PYODIDE ---
     function getFormattedDate(date, format = 'dd/mm/yyyy') {
+        if (!date) return '';
         const d = new Date(date);
         // Adjust for timezone offset to prevent date from shifting
         const userTimezoneOffset = d.getTimezoneOffset() * 60000;
@@ -881,8 +960,13 @@
     function setActiveJournal(journalId) {
         appData.activeJournalId = journalId;
         journalSelector.value = journalId;
-        // Set date picker to today's date in 'YYYY-MM-DD' format
-        dateInput.value = getFormattedDate(new Date(), 'yyyy-mm-dd');
+        
+        // Set default date in new inputs to today
+        const today = new Date();
+        dateDayInput.value = String(today.getDate()).padStart(2, '0');
+        dateMonthInput.value = String(today.getMonth() + 1).padStart(2, '0');
+        dateYearInput.value = today.getFullYear();
+
         const selectedJournal = appData.journals[journalId];
         entriesTitle.textContent = `Entries for: ${selectedJournal.name}`;
         [addEntryBtn, deleteJournalBtn, createJournalBtn, renameJournalBtn, downloadBackupBtn, importBackupBtn, searchInput].forEach(el => el.disabled = false);
@@ -1296,12 +1380,33 @@
         });
     }
 
-    function parseAndValidateDate(dateInputStr) {
-        if (!dateInputStr) {
-            showToast("Date cannot be empty.", 'error');
+    function assembleAndValidateDate(dayInput, monthInput, yearInput) {
+        let day = parseInt(dayInput.value, 10);
+        let month = parseInt(monthInput.value, 10);
+        let year = parseInt(yearInput.value, 10);
+
+        if (!day || !month || !year || year.toString().length < 4) {
+            showToast("Please enter a full date (DD, MM, YYYY).", 'error');
             return null;
         }
-        return dateInputStr;
+
+        if (month < 1) month = 1;
+        if (month > 12) month = 12;
+
+        const daysInMonth = new Date(year, month, 0).getDate();
+
+        if (day > daysInMonth) {
+            showToast(`Warning: ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} only has ${daysInMonth} days. Correcting date.`, 'info');
+            day = daysInMonth;
+        }
+        
+        if (day < 1) day = 1;
+
+        dayInput.value = String(day).padStart(2, '0');
+        monthInput.value = String(month).padStart(2, '0');
+        yearInput.value = String(year);
+
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
 
 
@@ -1361,12 +1466,18 @@
         e.preventDefault();
         const activeJournal = appData.journals[appData.activeJournalId];
         if (!activeJournal) return;
-        const formattedDate = parseAndValidateDate(dateInput.value);
+        
+        const formattedDate = assembleAndValidateDate(dateDayInput, dateMonthInput, dateYearInput);
         if (!formattedDate) return;
 
-        const lastUsedDate = dateInput.value;
+        // **START: Logic for Persistent Date**
+        // Capture the validated date and other fields to use for the next entry.
+        const lastUsedDay = dateDayInput.value;
+        const lastUsedMonth = dateMonthInput.value;
+        const lastUsedYear = dateYearInput.value;
         const lastUsedType = typeSelect.value;
         const lastUsedMethod = methodSelect.value;
+        // **END: Logic for Persistent Date**
 
         if (!activeJournal.entries) activeJournal.entries = [];
         activeJournal.entries.push({
@@ -1380,12 +1491,18 @@
         saveDataToFirestore(true).then(() => {
             showToast("Entry added", "success");
             
+            // Clear only the fields that change per entry
             narrationInput.value = '';
             amountInput.value = '';
             
-            dateInput.value = lastUsedDate;
+            // **START: Restore last used values**
+            // Keep the date and dropdowns the same for the next entry
+            dateDayInput.value = lastUsedDay;
+            dateMonthInput.value = lastUsedMonth;
+            dateYearInput.value = lastUsedYear;
             typeSelect.value = lastUsedType;
             methodSelect.value = lastUsedMethod;
+            // **END: Restore last used values**
 
             narrationInput.focus();
         });
@@ -1395,7 +1512,12 @@
         const entry = appData.journals[appData.activeJournalId]?.entries.find(e => e.id === entryId);
         if (!entry) return;
         document.getElementById('editEntryId').value = entry.id;
-        editDateInput.value = entry.date;
+
+        const [year, month, day] = entry.date.split('-');
+        editDateDayInput.value = day;
+        editDateMonthInput.value = month;
+        editDateYearInput.value = year;
+
         document.getElementById('editType').value = entry.type;
         document.getElementById('editMethod').value = entry.method;
         document.getElementById('editNarration').value = entry.narration;
@@ -1408,8 +1530,10 @@
         const activeJournal = appData.journals[appData.activeJournalId];
         const entryId = document.getElementById('editEntryId').value;
         if (!activeJournal || !entryId) return;
-        const formattedDate = parseAndValidateDate(editDateInput.value);
+
+        const formattedDate = assembleAndValidateDate(editDateDayInput, editDateMonthInput, editDateYearInput);
         if (!formattedDate) return;
+
         const entryIndex = activeJournal.entries.findIndex(e => e.id === entryId);
         if (entryIndex === -1) return;
 
@@ -1495,6 +1619,48 @@
             userMenu.classList.add('hidden');
         }
     });
+
+    // **START: Event Listeners for new date inputs**
+    function enforceMinMax(input) {
+      const value = parseInt(input.value, 10);
+      const min = parseInt(input.min, 10);
+      const max = parseInt(input.max, 10);
+      if (value > max) input.value = max;
+    }
+
+    function setupDateInputListeners(dayEl, monthEl, yearEl, pickerBtn, nativePicker) {
+      dayEl.addEventListener('input', () => enforceMinMax(dayEl));
+      monthEl.addEventListener('input', () => enforceMinMax(monthEl));
+      yearEl.addEventListener('input', () => {
+        if (yearEl.value.length > 4) {
+          yearEl.value = yearEl.value.slice(0, 4);
+        }
+      });
+
+      dayEl.addEventListener('keyup', () => { if (dayEl.value.length === 2) monthEl.focus(); });
+      monthEl.addEventListener('keyup', () => { if (monthEl.value.length === 2) yearEl.focus(); });
+
+      pickerBtn.addEventListener('click', () => {
+        try {
+          nativePicker.showPicker();
+        } catch (error) {
+          showToast("Your browser doesn't support this feature.", "error");
+        }
+      });
+
+      nativePicker.addEventListener('change', (e) => {
+        if (e.target.value) {
+          const [year, month, day] = e.target.value.split('-');
+          dayEl.value = day;
+          monthEl.value = month;
+          yearEl.value = year;
+        }
+      });
+    }
+    
+    setupDateInputListeners(dateDayInput, dateMonthInput, dateYearInput, datePickerBtn, nativeDatePicker);
+    setupDateInputListeners(editDateDayInput, editDateMonthInput, editDateYearInput, editDatePickerBtn, editNativeDatePicker);
+    // **END: Event Listeners for new date inputs**
 
     searchInput.addEventListener('input', (e) => {
         viewOptions.searchTerm = e.target.value;
@@ -1650,7 +1816,6 @@
             pyodide.globals.set('entries_json', JSON.stringify(activeJournal.entries));
             pyodide.globals.set('journal_name_js', activeJournal.name);
             
-            // CHANGE 1: Modified Python script with right-aligned narration
             const base64Data = await pyodide.runPythonAsync(`
 import json, io, base64
 from datetime import datetime
@@ -1665,7 +1830,7 @@ subheader_font = Font(name='Calibri', size=11, bold=True)
 vertical_month_font = Font(name='Calibri', size=28, bold=True)
 data_font = Font(name='Calibri', size=11)
 center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
-right_align = Alignment(horizontal='right', vertical='center', wrap_text=True) # <-- ADDED THIS STYLE
+right_align = Alignment(horizontal='right', vertical='center', wrap_text=True)
 vertical_align = Alignment(text_rotation=90, vertical='center', horizontal='center')
 blue_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
 orange_fill = PatternFill(start_color='ED7D31', end_color='ED7D31', fill_type='solid')
@@ -1699,7 +1864,7 @@ def create_month_table(worksheet, start_row, month_name, income_entries, expense
         for i, entry in enumerate(group_list):
             row_idx = current_income_row + i
             worksheet.cell(row=row_idx, column=4, value=entry.get('amount')).number_format = currency_format; worksheet.cell(row=row_idx, column=4).font = data_font
-            narration_cell = worksheet.cell(row=row_idx, column=5, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align # <-- APPLIED STYLE
+            narration_cell = worksheet.cell(row=row_idx, column=5, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align
         current_income_row += num_entries
 
     # --- Populate Expense Data ---
@@ -1713,7 +1878,7 @@ def create_month_table(worksheet, start_row, month_name, income_entries, expense
         for i, entry in enumerate(group_list):
             row_idx = current_expense_row + i
             worksheet.cell(row=row_idx, column=8, value=entry.get('amount')).number_format = currency_format; worksheet.cell(row=row_idx, column=8).font = data_font
-            narration_cell = worksheet.cell(row=row_idx, column=9, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align # <-- APPLIED STYLE
+            narration_cell = worksheet.cell(row=row_idx, column=9, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align
         current_expense_row += num_entries
         
     table_end_row = max(current_income_row, current_expense_row, start_row + MIN_ROWS_PER_MONTH)
