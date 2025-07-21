@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TCK Record Book - Cloud</title>
   
-  <!-- START: Browser Tab Icon (Favicon) -->
   <link rel="icon" type="image/png" href="logo.png">
-  <!-- END: Browser Tab Icon (Favicon) -->
 
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Pyodide for Excel Generation -->
@@ -58,6 +56,22 @@
       -moz-appearance: textfield;
       appearance: textfield;
     }
+    .journal-card.active {
+        border-color: #f97316;
+        box-shadow: 0 0 0 2px #f97316;
+    }
+    /* START: MERGE STYLES */
+    .journal-card.merge-destination {
+        border-color: #2563eb; /* Blue */
+        box-shadow: 0 0 0 2px #2563eb;
+        background-color: #eff6ff; /* Blue-50 */
+    }
+    .journal-card.disabled-card {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #f3f4f6; /* Gray-100 */
+    }
+    /* END: MERGE STYLES */
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans">
@@ -394,27 +408,28 @@
               </div>
             </div>
             
-            <!-- Data Management Tab -->
+            <!-- START: Data & Journals Tab - Redesigned -->
             <div id="data-management-content-container" class="hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Left Side: Journal Management -->
                     <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
-                        <h2 class="text-xl font-bold text-gray-800 mb-4">Manage Journals</h2>
-                        <div class="space-y-4">
-                            <div>
-                                <label for="journalSelector" class="block text-sm font-medium text-gray-700">Current Journal</label>
-                                <select id="journalSelector" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2"></select>
+                        <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                            <h2 class="text-xl font-bold text-gray-800">Manage Journals</h2>
+                            <div class="flex items-center gap-2">
+                                <button id="mergeJournalBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-sm">
+                                    Merge Journals
+                                </button>
+                                <button id="createJournalBtn" class="bg-lime-600 hover:bg-lime-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-sm">
+                                    Create New
+                                </button>
                             </div>
-                            <button id="createJournalBtn" class="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                                Create New Journal
-                            </button>
-                            <button id="renameJournalBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                                Rename Current Journal
-                            </button>
-                            <button id="deleteJournalBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50" disabled>
-                                Delete Current Journal
-                            </button>
+                        </div>
+                        <p id="merge-status-message" class="text-center text-sm text-blue-800 bg-blue-100 p-2 rounded-lg mb-4 hidden"></p>
+                        <div id="journal-cards-container" class="space-y-3">
+                            <!-- Journal cards will be dynamically inserted here by JavaScript -->
                         </div>
                     </div>
+                    <!-- Right Side: Data Management -->
                     <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
                         <h2 class="text-xl font-bold text-gray-800 mb-4">Data Management</h2>
                         <div class="space-y-4">
@@ -429,6 +444,7 @@
                     </div>
                 </div>
             </div>
+            <!-- END: Data & Journals Tab - Redesigned -->
         </div>
     </main>
   </div>
@@ -444,6 +460,26 @@
           </div>
       </div>
   </div>
+
+    <!-- START: New Import Options Modal -->
+    <div id="importOptionsModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+      <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Import Backup</h3>
+          <p class="text-sm text-gray-600 mb-6">How would you like to import the journals from the selected file?</p>
+          <div class="space-y-3">
+              <button id="importMergeBtn" class="w-full px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors">
+                  Merge with Existing Data
+                  <span class="block text-xs font-normal opacity-80">Adds new journals without deleting current ones.</span>
+              </button>
+              <button id="importReplaceBtn" class="w-full px-6 py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors">
+                  Replace All Data
+                  <span class="block text-xs font-normal opacity-80">Deletes all current data before importing.</span>
+              </button>
+              <button id="importCancelBtn" class="w-full mt-4 px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors">Cancel</button>
+          </div>
+      </div>
+  </div>
+  <!-- END: New Import Options Modal -->
 
   <!-- Edit Entry Modal -->
     <div id="editEntryModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
@@ -517,9 +553,7 @@
         doc, 
         setDoc, 
         onSnapshot,
-        // **START: Import for Offline Persistence**
         enableIndexedDbPersistence
-        // **END: Import for Offline Persistence**
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- FIREBASE CONFIGURATION ---
@@ -538,9 +572,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // **START: Enable Offline App Capability**
-    // This allows the app to work even when the internet is disconnected.
-    // It must be called before any other Firestore operations.
     try {
         enableIndexedDbPersistence(db)
             .then(() => console.log("Offline persistence enabled."))
@@ -554,14 +585,11 @@
     } catch (e) {
         console.error("Error enabling offline persistence: ", e);
     }
-    // **END: Enable Offline App Capability**
 
 
     // --- DOM ELEMENT REFERENCES ---
     const loginView = document.getElementById('login-view');
     const appView = document.getElementById('app-view');
-    
-    // New Login Form elements
     const loginForm = document.getElementById('loginForm');
     const emailStep = document.getElementById('email-step');
     const passwordStep = document.getElementById('password-step');
@@ -574,7 +602,6 @@
     const passwordAuthError = document.getElementById('password-auth-error');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
-
     const signOutBtn = document.getElementById('signOutBtn');
     const userEmailSpan = document.getElementById('userEmail');
     const userEmailDropdown = document.getElementById('user-email-dropdown');
@@ -588,21 +615,21 @@
     const importBackupBtn = document.getElementById('importBackupBtn');
     const fileImporter = document.getElementById('fileImporter');
     const statusMessage = document.getElementById('statusMessage');
-    const journalSelector = document.getElementById('journalSelector');
+    const journalCardsContainer = document.getElementById('journal-cards-container');
     const createJournalBtn = document.getElementById('createJournalBtn');
-    const renameJournalBtn = document.getElementById('renameJournalBtn');
-    const deleteJournalBtn = document.getElementById('deleteJournalBtn');
+    const importOptionsModal = document.getElementById('importOptionsModal');
+    const importMergeBtn = document.getElementById('importMergeBtn');
+    const importReplaceBtn = document.getElementById('importReplaceBtn');
+    const importCancelBtn = document.getElementById('importCancelBtn');
+    const mergeJournalBtn = document.getElementById('mergeJournalBtn');
+    const mergeStatusMessage = document.getElementById('merge-status-message');
     const entriesTitle = document.getElementById('entriesTitle');
     const addEntryBtn = document.getElementById('addEntryBtn');
-
-    // **START: New Date Input Elements**
     const dateDayInput = document.getElementById('date-day');
     const dateMonthInput = document.getElementById('date-month');
     const dateYearInput = document.getElementById('date-year');
     const datePickerBtn = document.getElementById('date-picker-btn');
     const nativeDatePicker = document.getElementById('native-date-picker');
-    // **END: New Date Input Elements**
-    
     const typeSelect = document.getElementById('type');
     const methodSelect = document.getElementById('method');
     const narrationInput = document.getElementById('narration');
@@ -619,22 +646,15 @@
     const editEntryModal = document.getElementById('editEntryModal');
     const editEntryForm = document.getElementById('editEntryForm');
     const editCancelBtn = document.getElementById('editCancelBtn');
-    
-    // **START: New Edit Date Input Elements**
     const editDateDayInput = document.getElementById('edit-date-day');
     const editDateMonthInput = document.getElementById('edit-date-month');
     const editDateYearInput = document.getElementById('edit-date-year');
     const editDatePickerBtn = document.getElementById('edit-date-picker-btn');
     const editNativeDatePicker = document.getElementById('edit-native-date-picker');
-    // **END: New Edit Date Input Elements**
-
     const recentEntriesBody = document.getElementById('recent-entries-body');
-
-    // Dashboard Elements
     const dashboardMainContent = document.getElementById('dashboard-main-content');
     const dashboardMessage = document.getElementById('dashboard-message');
     const dashboardTitle = document.getElementById('dashboard-title');
-    const lastUpdatedSpan = document.getElementById('last-updated-span');
     const kpiIncomeEl = document.getElementById('kpi-income');
     const kpiIncomeCompEl = document.getElementById('kpi-income-comp');
     const kpiExpenseEl = document.getElementById('kpi-expense');
@@ -642,22 +662,13 @@
     const kpiNetEl = document.getElementById('kpi-net');
     const kpiNetCompEl = document.getElementById('kpi-net-comp');
     const kpiRangeBtns = document.querySelectorAll('.kpi-range-btn');
-
     const donutChartCanvas = document.getElementById('donutChart');
     const incomeBarChartCanvas = document.getElementById('incomeBarChart');
     const expenseBarChartCanvas = document.getElementById('expenseBarChart');
     const netBalanceAreaChartCanvas = document.getElementById('netBalanceAreaChart');
-    
     const chartTitle = document.getElementById('chart-title');
-    const chartTypeBtns = {
-        expense: document.getElementById('chart-type-expense'),
-        income: document.getElementById('chart-type-income'),
-    };
-    
+    const chartTypeBtns = { expense: document.getElementById('chart-type-expense'), income: document.getElementById('chart-type-income'), };
     let donutChartInstance, incomeBarChartInstance, expenseBarChartInstance, netBalanceAreaChartInstance;
-
-
-    // Enhanced Manage Tab DOM Elements
     const filteredIncomeEl = document.getElementById('filtered-income');
     const filteredExpenseEl = document.getElementById('filtered-expense');
     const filteredNetEl = document.getElementById('filtered-net');
@@ -670,27 +681,20 @@
     const prevPageBtn = document.getElementById('prev-page-btn');
     const nextPageBtn = document.getElementById('next-page-btn');
     const pageInfo = document.getElementById('page-info');
-
-    // Tab-related DOM elements
-    const tabButtons = {
-        dashboard: document.getElementById('dashboard-tab-btn'),
-        add: document.getElementById('add-entry-tab-btn'),
-        manage: document.getElementById('management-tab-btn'),
-        data: document.getElementById('data-management-tab-btn'),
-    };
-    const tabContents = {
-        dashboard: document.getElementById('dashboard-content-container'),
-        add: document.getElementById('add-entry-content-container'),
-        manage: document.getElementById('management-content-container'),
-        data: document.getElementById('data-management-content-container'),
-    };
+    const tabButtons = { dashboard: document.getElementById('dashboard-tab-btn'), add: document.getElementById('add-entry-tab-btn'), manage: document.getElementById('management-tab-btn'), data: document.getElementById('data-management-tab-btn'), };
+    const tabContents = { dashboard: document.getElementById('dashboard-content-container'), add: document.getElementById('add-entry-content-container'), manage: document.getElementById('management-content-container'), data: document.getElementById('data-management-content-container'), };
 
     // --- APP STATE ---
     let appData = {};
     let currentUser = null;
     let unsubscribeFromFirestore = null; 
     let confirmCallback = null;
+    let importedDataCache = null; 
+    let lastActiveJournalId = null; 
+    let isMergeModeActive = false;
+    let mergeDestinationId = null;
     let viewOptions = {
+        currentJournalView: 'all', 
         sortBy: 'date_desc',
         filterByType: 'all',
         filterByMethod: 'all',
@@ -699,8 +703,8 @@
         endDate: null,
         currentPage: 1,
         itemsPerPage: 50,
-        chartDataType: 'expense', // 'income' or 'expense'
-        dashboardDateRange: 'month', // 'week', 'month', 'year', 'all'
+        chartDataType: 'expense', 
+        dashboardDateRange: 'month', 
     };
     let selectedEntryIds = new Set();
     let syncTimeout;
@@ -719,62 +723,33 @@
         setTimeout(() => {
             toast.classList.add('fading-out');
             toast.addEventListener('animationend', () => toast.remove());
-        }, 4000); // Increased duration for warnings
+        }, 4000); 
     }
 
-    function logoutDueToInactivity() {
-        if (auth.currentUser) {
-            signOut(auth);
-            showToast("Logged out due to inactivity", "info");
-        }
-    }
-
-    function resetInactivityTimer() {
-        clearTimeout(inactivityTimer);
-        inactivityTimer = setTimeout(logoutDueToInactivity, 30 * 60 * 1000); // 30 minutes
-    }
-
-    function setupInactivityListeners() {
-        activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer, true));
-        resetInactivityTimer();
-    }
-
-    function removeInactivityListeners() {
-        clearTimeout(inactivityTimer);
-        activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer, true));
-    }
+    function logoutDueToInactivity() { if (auth.currentUser) { signOut(auth); showToast("Logged out due to inactivity", "info"); } }
+    function resetInactivityTimer() { clearTimeout(inactivityTimer); inactivityTimer = setTimeout(logoutDueToInactivity, 30 * 60 * 1000); }
+    function setupInactivityListeners() { activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer, true)); resetInactivityTimer(); }
+    function removeInactivityListeners() { clearTimeout(inactivityTimer); activityEvents.forEach(event => window.removeEventListener(event, resetInactivityTimer, true)); }
     
     // --- UTILITY & PYODIDE ---
     function getFormattedDate(date, format = 'dd/mm/yyyy') {
         if (!date) return '';
         const d = new Date(date);
-        // Adjust for timezone offset to prevent date from shifting
         const userTimezoneOffset = d.getTimezoneOffset() * 60000;
         const adjustedDate = new Date(d.getTime() + userTimezoneOffset);
         const yyyy = adjustedDate.getFullYear();
         const mm = String(adjustedDate.getMonth() + 1).padStart(2, '0');
         const dd = String(adjustedDate.getDate()).padStart(2, '0');
-        
-        if (format === 'yyyy-mm-dd') {
-            return `${yyyy}-${mm}-${dd}`;
-        }
+        if (format === 'yyyy-mm-dd') { return `${yyyy}-${mm}-${dd}`; }
         return `${dd}/${mm}/${yyyy}`;
     }
 
-    function formatTimeAgo(isoString) {
-        if (!isoString) return '';
-        const date = new Date(isoString);
-        const now = new Date();
-        const seconds = Math.round((now - date) / 1000);
-        const minutes = Math.round(seconds / 60);
-        const hours = Math.round(minutes / 60);
-        const days = Math.round(hours / 24);
-
-        if (seconds < 60) return "a few seconds ago";
-        if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-        if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-        if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
-        return `on ${date.toLocaleDateString()}`;
+    function getIntervalKey(date, interval) {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        if (interval === 'quarter') { const quarter = Math.floor(month / 3) + 1; return `${year}-Q${quarter}`; }
+        if (interval === 'month') { return `${year}-${String(month + 1).padStart(2, '0')}`; }
+        return date.toLocaleDateString('en-CA');
     }
     
     function formatAmountForDashboard(amount) {
@@ -813,7 +788,7 @@
             currentUser = user;
             appView.classList.remove('hidden');
             loginView.classList.add('hidden');
-            document.body.className = 'bg-gray-50 min-h-screen font-sans'; // Set app view body class
+            document.body.className = 'bg-gray-50 min-h-screen font-sans';
             userEmailSpan.textContent = user.email;
             userEmailDropdown.textContent = user.email;
             loadDataFromFirestore();
@@ -824,7 +799,7 @@
             if (unsubscribeFromFirestore) unsubscribeFromFirestore();
             appView.classList.add('hidden');
             loginView.classList.remove('hidden');
-            document.body.className = 'bg-gray-100 min-h-screen font-sans'; // Set login view body class
+            document.body.className = 'bg-gray-100 min-h-screen font-sans';
             userEmailSpan.textContent = '';
             syncStatus.innerHTML = '';
             appData = {}; 
@@ -834,12 +809,8 @@
     });
     
     const goToPasswordStep = (submitAction) => {
-        if (!emailInput.value) {
-            emailAuthError.textContent = 'Please enter your email.';
-            return;
-        }
-        emailAuthError.textContent = '';
-        passwordAuthError.textContent = '';
+        if (!emailInput.value) { emailAuthError.textContent = 'Please enter your email.'; return; }
+        emailAuthError.textContent = ''; passwordAuthError.textContent = '';
         userEmailDisplay.textContent = emailInput.value;
         submitBtn.textContent = submitAction;
         emailStep.classList.add('hidden');
@@ -849,50 +820,28 @@
 
     nextBtn.addEventListener('click', () => goToPasswordStep('Sign In'));
     createAccountBtn.addEventListener('click', () => goToPasswordStep('Sign Up'));
-    changeEmailBtn.addEventListener('click', () => {
-        passwordStep.classList.add('hidden');
-        emailStep.classList.remove('hidden');
-        emailInput.focus();
-    });
+    changeEmailBtn.addEventListener('click', () => { passwordStep.classList.add('hidden'); emailStep.classList.remove('hidden'); emailInput.focus(); });
 
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const email = emailInput.value;
         const password = passwordInput.value;
         const action = submitBtn.textContent;
-
-        if (action === 'Sign In') {
-            signInWithEmailAndPassword(auth, email, password)
-                .catch(error => passwordAuthError.textContent = error.message);
-        } else { // Sign Up
-            if (password.length < 6) {
-                passwordAuthError.textContent = "Password should be at least 6 characters.";
-                return;
-            }
-            createUserWithEmailAndPassword(auth, email, password)
-                .catch(error => passwordAuthError.textContent = error.message);
+        if (action === 'Sign In') { signInWithEmailAndPassword(auth, email, password).catch(error => passwordAuthError.textContent = error.message);
+        } else { if (password.length < 6) { passwordAuthError.textContent = "Password should be at least 6 characters."; return; }
+            createUserWithEmailAndPassword(auth, email, password).catch(error => passwordAuthError.textContent = error.message);
         }
     });
 
-    signOutBtn.addEventListener('click', () => {
-        signOut(auth)
-            .then(() => {
-                window.location.reload();
-            })
-            .catch(error => showToast(error.message, 'error'));
-    });
+    signOutBtn.addEventListener('click', () => { signOut(auth).then(() => { window.location.reload(); }).catch(error => showToast(error.message, 'error')); });
 
     // --- DATA HANDLING ---
     function loadDataFromFirestore() {
         if (!currentUser) return;
         const docRef = doc(db, "users", currentUser.uid);
         unsubscribeFromFirestore = onSnapshot(docRef, (docSnap) => {
-            if (docSnap.exists()) {
-                appData = docSnap.data();
-            } else {
-                initializeNewState();
-                saveDataToFirestore(); 
-            }
+            if (docSnap.exists()) { appData = docSnap.data(); } else { initializeNewState(); saveDataToFirestore(); }
+            viewOptions.currentJournalView = appData.activeJournalId || (Object.keys(appData.journals || {})[0]) || 'all';
             updateUI();
         }, (error) => showToast("Error connecting to cloud data.", 'error'));
     }
@@ -907,11 +856,9 @@
 
     async function saveDataToFirestore(updateTimestamp = false) {
         if (!currentUser) return;
-
         if(updateTimestamp && appData.activeJournalId && appData.journals[appData.activeJournalId]) {
             appData.journals[appData.activeJournalId].lastModified = new Date().toISOString();
         }
-
         clearTimeout(syncTimeout);
         syncStatus.innerHTML = `<svg class="animate-spin h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Saving...</span>`;
         try {
@@ -929,56 +876,116 @@
     function updateUI() {
         if (!appData.journals || Object.keys(appData.journals).length === 0) {
             const isLoggedIn = !!currentUser;
-            entriesTitle.textContent = isLoggedIn ? "No Journal Selected" : "Please sign in";
+            entriesTitle.textContent = isLoggedIn ? "No Journals Found" : "Please sign in";
             tableBody.innerHTML = `<tr id="placeholderRow"><td colspan="7" class="text-center py-10 text-gray-500">${isLoggedIn ? 'Create a journal to get started.' : 'Sign in to manage your journals.'}</td></tr>`;
-            [addEntryBtn, deleteJournalBtn, downloadBtn, renameJournalBtn, downloadBackupBtn, searchInput].forEach(el => el.disabled = true);
+            [addEntryBtn, downloadBtn, downloadBackupBtn, searchInput, mergeJournalBtn].forEach(el => el.disabled = true);
             createJournalBtn.disabled = !isLoggedIn; importBackupBtn.disabled = !isLoggedIn;
-            journalSelector.innerHTML = `<option>${isLoggedIn ? 'No Journals' : 'Not signed in'}</option>`;
+            journalCardsContainer.innerHTML = `<p class="text-sm text-gray-500 text-center">No journals to display.</p>`;
             dashboardMainContent.classList.add('hidden');
             dashboardMessage.classList.remove('hidden');
             return;
         }
         dashboardMainContent.classList.remove('hidden');
         dashboardMessage.classList.add('hidden');
-        loadJournalsIntoSelector();
-        const activeId = appData.activeJournalId;
-        const journalIds = Object.keys(appData.journals);
-        setActiveJournal((activeId && appData.journals[activeId]) ? activeId : journalIds[0]);
+        [createJournalBtn, downloadBackupBtn, importBackupBtn, searchInput, mergeJournalBtn].forEach(el => el.disabled = false);
+        mergeJournalBtn.disabled = Object.keys(appData.journals).length < 2;
+        renderJournalCards();
+        setActiveJournalView(viewOptions.currentJournalView);
     }
 
-    function loadJournalsIntoSelector() {
-        const sortedIds = Object.keys(appData.journals).sort((a,b) => appData.journals[a].name.localeCompare(appData.journals[b].name));
-        journalSelector.innerHTML = '';
+    function renderJournalCards() {
+        journalCardsContainer.innerHTML = '';
+        const journals = appData.journals || {};
+        const sortedIds = Object.keys(journals).sort((a,b) => journals[a].name.localeCompare(journals[b].name));
+        
+        const allCard = document.createElement('div');
+        allCard.className = `journal-card p-4 border rounded-lg cursor-pointer transition-all ${viewOptions.currentJournalView === 'all' ? 'active' : 'border-gray-200 hover:bg-gray-50'}`;
+        allCard.dataset.id = 'all';
+        const totalEntries = Object.values(journals).reduce((sum, j) => sum + (j.entries?.length || 0), 0);
+        allCard.innerHTML = `
+            <div class="flex justify-between items-center">
+                <div> <h3 class="font-bold text-gray-800">All Journals</h3> <p class="text-xs text-gray-500">${sortedIds.length} journals, ${totalEntries} entries</p> </div>
+                ${!isMergeModeActive ? '<button class="select-journal-btn bg-gray-200 text-gray-800 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300" data-id="all">Select</button>' : ''}
+            </div>`;
+        if(isMergeModeActive) allCard.classList.add('disabled-card');
+        journalCardsContainer.appendChild(allCard);
+
         sortedIds.forEach(id => {
-            const journal = appData.journals[id];
-            const option = document.createElement('option');
-            option.value = id; option.textContent = journal.name;
-            journalSelector.appendChild(option);
+            const journal = journals[id];
+            const card = document.createElement('div');
+            card.className = `journal-card p-4 border rounded-lg cursor-pointer transition-all`;
+            card.dataset.id = id;
+
+            if (viewOptions.currentJournalView === id && !isMergeModeActive) { card.classList.add('active'); } else { card.classList.add('border-gray-200', 'hover:bg-gray-50'); }
+            
+            let cardActionsHTML = '';
+            if (isMergeModeActive) {
+                let buttonHTML = '';
+                if (!mergeDestinationId) { buttonHTML = `<button class="select-merge-btn bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-blue-700" data-id="${id}">Select as Destination</button>`;
+                } else {
+                    if (id === mergeDestinationId) { card.classList.add('merge-destination'); buttonHTML = `<span class="text-xs font-bold text-blue-800">DESTINATION</span>`;
+                    } else {
+                        if (canJournalsBeMerged(id, mergeDestinationId)) { buttonHTML = `<button class="select-merge-btn bg-lime-600 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-lime-700" data-id="${id}">Merge From Here</button>`;
+                        } else { card.classList.add('disabled-card'); buttonHTML = `<span class="text-xs font-bold text-red-700">Has different years</span>`; }
+                    }
+                }
+                cardActionsHTML = `<div class="flex items-center gap-2">${buttonHTML}</div>`;
+            } else {
+                cardActionsHTML = `
+                <div class="flex items-center gap-2">
+                    <button class="rename-journal-btn text-xs font-semibold text-blue-600 hover:text-blue-800" data-id="${id}">Rename</button>
+                    <button class="delete-journal-btn text-xs font-semibold text-red-600 hover:text-red-800" data-id="${id}">Delete</button>
+                    <button class="select-journal-btn bg-gray-200 text-gray-800 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300" data-id="${id}">Select</button>
+                </div>`;
+            }
+            card.innerHTML = `<div class="flex justify-between items-center"> <div> <h3 class="font-bold text-gray-800 truncate">${journal.name}</h3> <p class="text-xs text-gray-500">${journal.entries?.length || 0} entries</p> </div> ${cardActionsHTML} </div>`;
+            journalCardsContainer.appendChild(card);
         });
     }
 
-    function setActiveJournal(journalId) {
-        appData.activeJournalId = journalId;
-        journalSelector.value = journalId;
+    // START: FIX FOR ADD ENTRY BUTTON
+    function setActiveJournalView(journalId) {
+        viewOptions.currentJournalView = journalId;
         
-        // Set default date in new inputs to today
+        let title = "Dashboard";
+        if (journalId === 'all') {
+            appData.activeJournalId = null; 
+            title = 'All Journals';
+            // Disable Add Entry UI elements
+            entryForm.classList.add('opacity-50', 'pointer-events-none');
+            tabButtons.add.disabled = true;
+            addEntryBtn.disabled = true; // Explicitly disable the submit button
+        } else {
+            appData.activeJournalId = journalId;
+            title = appData.journals[journalId]?.name || "Dashboard";
+            // Enable Add Entry UI elements
+            entryForm.classList.remove('opacity-50', 'pointer-events-none');
+            tabButtons.add.disabled = false;
+            addEntryBtn.disabled = false; // Explicitly enable the submit button
+        }
+
         const today = new Date();
         dateDayInput.value = String(today.getDate()).padStart(2, '0');
         dateMonthInput.value = String(today.getMonth() + 1).padStart(2, '0');
         dateYearInput.value = today.getFullYear();
-
-        const selectedJournal = appData.journals[journalId];
-        entriesTitle.textContent = `Entries for: ${selectedJournal.name}`;
-        [addEntryBtn, deleteJournalBtn, createJournalBtn, renameJournalBtn, downloadBackupBtn, importBackupBtn, searchInput].forEach(el => el.disabled = false);
-        resetAllFilters();
+        
+        entriesTitle.textContent = `Entries for: ${title}`;
+        
+        resetAllFilters(); 
+        renderJournalCards(); 
     }
+    // END: FIX FOR ADD ENTRY BUTTON
     
     function getFilteredEntries() {
-        const activeJournal = appData.journals[appData.activeJournalId];
-        if (!activeJournal || !activeJournal.entries) return [];
+        const journalView = viewOptions.currentJournalView;
+        let entriesToFilter = [];
+        if (journalView === 'all') { entriesToFilter = Object.values(appData.journals || {}).flatMap(j => j.entries || []);
+        } else { const activeJournal = appData.journals?.[journalView]; if (activeJournal && activeJournal.entries) { entriesToFilter = activeJournal.entries; } }
+        
         const searchTerm = viewOptions.searchTerm.toLowerCase();
         
-        return activeJournal.entries.filter(e => {
+        return entriesToFilter.filter(e => {
+            if (!e || !e.date) return false;
             const entryDate = new Date(e.date);
             const startDate = viewOptions.startDate ? new Date(viewOptions.startDate) : null;
             const endDate = viewOptions.endDate ? new Date(viewOptions.endDate) : null;
@@ -993,29 +1000,15 @@
 
     function renderRecentEntriesPreview() {
         const activeJournal = appData.journals[appData.activeJournalId];
-        if (!activeJournal || !activeJournal.entries || activeJournal.entries.length === 0) {
-            recentEntriesBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">No recent entries to show.</td></tr>`;
+        if (viewOptions.currentJournalView === 'all' || !activeJournal || !activeJournal.entries || activeJournal.entries.length === 0) {
+            recentEntriesBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">${viewOptions.currentJournalView === 'all' ? 'Select a journal to add entries.' : 'No recent entries to show.'}</td></tr>`;
             return;
         }
         
-        const recentEntries = [...activeJournal.entries]
-            .sort((a, b) => b.id.localeCompare(a.id))
-            .slice(0, 30);
-
+        const recentEntries = [...activeJournal.entries].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 30);
         recentEntriesBody.innerHTML = recentEntries.map(entry => {
             const typeClass = entry.type === 'Income' ? 'bg-lime-100 text-lime-800' : 'bg-red-100 text-red-800';
-            return `
-                <tr class="new-row">
-                    <td class="py-2 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td>
-                    <td class="py-2 px-4 break-words">${entry.narration}</td>
-                    <td class="py-2 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">${entry.type}</span></td>
-                    <td class="py-2 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td>
-                    <td class="py-2 px-4 text-center whitespace-nowrap">
-                        <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors text-xs mr-2">Edit</button>
-                        <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors text-xs">Delete</button>
-                    </td>
-                </tr>
-            `;
+            return `<tr class="new-row"> <td class="py-2 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td> <td class="py-2 px-4 break-words">${entry.narration}</td> <td class="py-2 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">${entry.type}</span></td> <td class="py-2 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td> <td class="py-2 px-4 text-center whitespace-nowrap"> <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors text-xs mr-2">Edit</button> <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors text-xs">Delete</button> </td> </tr>`;
         }).join('');
     }
 
@@ -1032,35 +1025,24 @@
     function renderTable() {
         renderDashboard();
         renderRecentEntriesPreview();
-        
         const allFilteredEntries = getFilteredEntries();
         updateFilteredSummary(allFilteredEntries);
-
         let sortedEntries = [...allFilteredEntries];
         if (viewOptions.sortBy === 'amount_asc') sortedEntries.sort((a, b) => a.amount - b.amount);
         else if (viewOptions.sortBy === 'amount_desc') sortedEntries.sort((a, b) => b.amount - a.amount);
-        else {
-            sortedEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
-            if(viewOptions.sortBy === 'date_desc') sortedEntries.reverse();
-        }
-
+        else { sortedEntries.sort((a, b) => new Date(a.date) - new Date(b.date)); if(viewOptions.sortBy === 'date_desc') sortedEntries.reverse(); }
         const totalPages = Math.ceil(sortedEntries.length / viewOptions.itemsPerPage);
         viewOptions.currentPage = Math.max(1, Math.min(viewOptions.currentPage, totalPages || 1));
         const startIndex = (viewOptions.currentPage - 1) * viewOptions.itemsPerPage;
         const endIndex = startIndex + viewOptions.itemsPerPage;
         const entriesToRender = sortedEntries.slice(startIndex, endIndex);
-
         tableBody.innerHTML = '';
         downloadBtn.disabled = allFilteredEntries.length === 0;
-
         if (allFilteredEntries.length === 0) {
-            const hasAnyEntries = appData.journals[appData.activeJournalId]?.entries?.length > 0;
-            const message = hasAnyEntries ? "No entries match your current filters." : "No entries in this journal.";
+            const hasAnyJournals = Object.keys(appData.journals || {}).length > 0;
+            const message = hasAnyJournals ? "No entries match your current filters." : "No entries in this journal.";
             tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500">${message}</td></tr>`;
-        } else {
-            entriesToRender.forEach(entry => tableBody.appendChild(createRowElement(entry)));
-        }
-
+        } else { entriesToRender.forEach(entry => tableBody.appendChild(createRowElement(entry))); }
         updatePaginationControls(sortedEntries.length, totalPages);
         updateBulkDeleteButton();
         selectAllCheckbox.checked = false;
@@ -1068,21 +1050,9 @@
 
     function createRowElement(entry) {
         const tr = document.createElement('tr');
-        tr.className = 'new-row'; 
-        tr.dataset.id = entry.id;
+        tr.className = 'new-row'; tr.dataset.id = entry.id;
         const isChecked = selectedEntryIds.has(entry.id);
-
-        tr.innerHTML = `
-            <td class="py-3 px-4 w-12 text-center"><input type="checkbox" data-id="${entry.id}" class="row-checkbox" ${isChecked ? 'checked' : ''}></td>
-            <td class="py-3 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td>
-            <td class="py-3 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${entry.type === 'Income' ? 'bg-lime-100 text-lime-800' : 'bg-red-100 text-red-800'}">${entry.type}</span></td>
-            <td class="py-3 px-4 whitespace-nowrap">${entry.method}</td>
-            <td class="py-3 px-4 break-words">${entry.narration}</td>
-            <td class="py-3 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td>
-            <td class="py-3 px-4 text-center whitespace-nowrap">
-                <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors mr-2">Edit</button>
-                <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors">Delete</button>
-            </td>`;
+        tr.innerHTML = ` <td class="py-3 px-4 w-12 text-center"><input type="checkbox" data-id="${entry.id}" class="row-checkbox" ${isChecked ? 'checked' : ''}></td> <td class="py-3 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td> <td class="py-3 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${entry.type === 'Income' ? 'bg-lime-100 text-lime-800' : 'bg-red-100 text-red-800'}">${entry.type}</span></td> <td class="py-3 px-4 whitespace-nowrap">${entry.method}</td> <td class="py-3 px-4 break-words">${entry.narration}</td> <td class="py-3 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td> <td class="py-3 px-4 text-center whitespace-nowrap"> <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors mr-2">Edit</button> <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors">Delete</button> </td>`;
         return tr;
     }
     
@@ -1093,872 +1063,207 @@
     }
 
     function renderDashboard() {
-        const activeJournal = appData.journals[appData.activeJournalId];
-        if (!activeJournal || !activeJournal.entries) {
-            dashboardMainContent.classList.add('hidden');
-            dashboardMessage.classList.remove('hidden');
-            return;
-        };
-
+        if (!appData.journals || Object.keys(appData.journals).length === 0) { dashboardMainContent.classList.add('hidden'); dashboardMessage.classList.remove('hidden'); return; };
         dashboardMainContent.classList.remove('hidden');
         dashboardMessage.classList.add('hidden');
-        
         const rangeText = { week: 'This Week', month: 'This Month', year: 'This Year', all: 'All Time' };
-        dashboardTitle.textContent = `Dashboard (${rangeText[viewOptions.dashboardDateRange]})`;
-        
+        let journalTitle = "Dashboard";
+        if (viewOptions.currentJournalView === 'all') { journalTitle = 'All Journals';
+        } else if (appData.journals[viewOptions.currentJournalView]) { journalTitle = appData.journals[viewOptions.currentJournalView].name; }
+        dashboardTitle.textContent = `${journalTitle} (${rangeText[viewOptions.dashboardDateRange]})`;
         const { currentPeriod, prevPeriod } = getDateRanges(viewOptions.dashboardDateRange);
-        const allEntries = activeJournal.entries;
-        const currentEntries = allEntries.filter(e => {
-            const entryDate = new Date(e.date);
-            return entryDate >= currentPeriod.start && entryDate <= currentPeriod.end;
-        });
-        const prevEntries = allEntries.filter(e => {
-            const entryDate = new Date(e.date);
-            return entryDate >= prevPeriod.start && entryDate <= prevPeriod.end;
-        });
-
+        const allEntries = getFilteredEntries();
+        const currentEntries = allEntries.filter(e => { const entryDate = new Date(e.date); return entryDate >= currentPeriod.start && entryDate <= currentPeriod.end; });
+        const prevEntriesAll = getFilteredEntries(); 
+        const prevEntries = prevEntriesAll.filter(e => { const entryDate = new Date(e.date); return entryDate >= prevPeriod.start && entryDate <= prevPeriod.end; });
         const currentIncome = currentEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0);
         const currentExpense = currentEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0);
         const currentNet = currentIncome - currentExpense;
-        
         const prevIncome = prevEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0);
         const prevExpense = prevEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0);
         const prevNet = prevIncome - prevExpense;
-
         kpiIncomeEl.textContent = formatAmountForDashboard(currentIncome);
         kpiExpenseEl.textContent = formatAmountForDashboard(currentExpense);
         kpiNetEl.textContent = formatAmountForDashboard(currentNet);
-
         kpiIncomeCompEl.innerHTML = getComparisonHTML(currentIncome, prevIncome);
-        kpiExpenseCompEl.innerHTML = getComparisonHTML(currentExpense, prevExpense, true); // Invert for expense
+        kpiExpenseCompEl.innerHTML = getComparisonHTML(currentExpense, prevExpense, true); 
         kpiNetCompEl.innerHTML = getComparisonHTML(currentNet, prevNet);
-
         updateChartButtonStyles();
-        
-        const interval = viewOptions.dashboardDateRange === 'year' || viewOptions.dashboardDateRange === 'all' ? 'month' : 'day';
-        
+        let interval = 'day';
+        if (viewOptions.dashboardDateRange === 'all') { interval = 'quarter'; } else if (viewOptions.dashboardDateRange === 'year') { interval = 'month'; }
         const groupedIncome = groupDataByInterval(currentEntries.filter(e => e.type === 'Income'), interval, currentPeriod);
         incomeBarChartInstance = renderBarChart(incomeBarChartInstance, incomeBarChartCanvas, 'Income Over Time', groupedIncome, '#84cc16');
-
         const groupedExpense = groupDataByInterval(currentEntries.filter(e => e.type === 'Expense'), interval, currentPeriod);
         expenseBarChartInstance = renderBarChart(expenseBarChartInstance, expenseBarChartCanvas, 'Expense Over Time', groupedExpense, '#ef4444');
-        
         const netBalanceData = calculateNetBalanceOverTime(currentEntries, interval, currentPeriod);
         netBalanceAreaChartInstance = renderAreaChart(netBalanceAreaChartInstance, netBalanceAreaChartCanvas, 'Net Balance Over Time', netBalanceData);
-        
         donutChartInstance = renderDonutChart(donutChartInstance, donutChartCanvas, currentEntries, viewOptions.chartDataType);
     }
     
     function getComparisonHTML(current, previous, invert = false) {
-        if (previous === 0) {
-            return current > 0 ? `<span class="text-lime-600">↑ New</span>` : `<span class="text-gray-500">-</span>`;
-        }
+        if (previous === 0) { return current > 0 ? `<span class="text-lime-600">↑ New</span>` : `<span class="text-gray-500">-</span>`; }
         const percentChange = ((current - previous) / previous) * 100;
         const isUp = percentChange > 0;
         const isDown = percentChange < 0;
-        
-        let colorClass = 'text-gray-500'; // No change
+        let colorClass = 'text-gray-500';
         if ((isUp && !invert) || (isDown && invert)) colorClass = 'text-lime-600';
         if ((isDown && !invert) || (isUp && invert)) colorClass = 'text-red-600';
-
         const arrow = isUp ? '↑' : '↓';
         const formattedPercent = Math.abs(percentChange).toFixed(0);
-
         if (Math.abs(formattedPercent) < 1) return `<span class="text-gray-500">~ 0%</span>`;
-
         return `<span class="${colorClass}">${arrow} ${formattedPercent}% vs previous period</span>`;
     }
 
     function getDateRanges(rangeKey) {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        let currentPeriod = { start: new Date(), end: new Date() };
-        let prevPeriod = { start: new Date(), end: new Date() };
-
+        const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let currentPeriod = { start: new Date(), end: new Date() }; let prevPeriod = { start: new Date(), end: new Date() };
         switch (rangeKey) {
             case 'week':
-                currentPeriod.start = new Date(today);
-                currentPeriod.start.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
-                currentPeriod.end = new Date(currentPeriod.start);
-                currentPeriod.end.setDate(currentPeriod.start.getDate() + 6);
-                prevPeriod.start = new Date(currentPeriod.start);
-                prevPeriod.start.setDate(currentPeriod.start.getDate() - 7);
-                prevPeriod.end = new Date(currentPeriod.end);
-                prevPeriod.end.setDate(currentPeriod.end.getDate() - 7);
-                break;
+                currentPeriod.start = new Date(today); currentPeriod.start.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+                currentPeriod.end = new Date(currentPeriod.start); currentPeriod.end.setDate(currentPeriod.start.getDate() + 6);
+                prevPeriod.start = new Date(currentPeriod.start); prevPeriod.start.setDate(currentPeriod.start.getDate() - 7);
+                prevPeriod.end = new Date(currentPeriod.end); prevPeriod.end.setDate(currentPeriod.end.getDate() - 7); break;
             case 'year':
-                currentPeriod.start = new Date(today.getFullYear(), 0, 1);
-                currentPeriod.end = new Date(today.getFullYear(), 11, 31);
-                prevPeriod.start = new Date(today.getFullYear() - 1, 0, 1);
-                prevPeriod.end = new Date(today.getFullYear() - 1, 11, 31);
-                break;
+                currentPeriod.start = new Date(today.getFullYear(), 0, 1); currentPeriod.end = new Date(today.getFullYear(), 11, 31);
+                prevPeriod.start = new Date(today.getFullYear() - 1, 0, 1); prevPeriod.end = new Date(today.getFullYear() - 1, 11, 31); break;
             case 'all':
-                const allEntries = appData.journals[appData.activeJournalId].entries;
-                if (allEntries.length > 0) {
-                    const firstDate = new Date(allEntries.sort((a, b) => new Date(a.date) - new Date(b.date))[0].date);
-                    currentPeriod.start = new Date(firstDate.getFullYear(), 0, 1);
-                } else {
-                    currentPeriod.start = new Date(today.getFullYear(), 0, 1);
-                }
+                const allEntries = getFilteredEntries();
+                if (allEntries.length > 0) { const firstDate = new Date(allEntries.sort((a, b) => new Date(a.date) - new Date(b.date))[0].date); currentPeriod.start = new Date(firstDate.getFullYear(), 0, 1);
+                } else { currentPeriod.start = new Date(today.getFullYear(), 0, 1); }
                 currentPeriod.end = new Date(today.getFullYear(), 11, 31);
-                prevPeriod.start = new Date(currentPeriod.start);
-                prevPeriod.start.setFullYear(prevPeriod.start.getFullYear() - 1);
-                prevPeriod.end = new Date(currentPeriod.end);
-                prevPeriod.end.setFullYear(prevPeriod.end.getFullYear() - 1);
-                break;
-            case 'month':
-            default:
-                currentPeriod.start = new Date(today.getFullYear(), today.getMonth(), 1);
-                currentPeriod.end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-                prevPeriod.start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-                prevPeriod.end = new Date(today.getFullYear(), today.getMonth(), 0);
-                break;
+                prevPeriod.start = new Date(currentPeriod.start); prevPeriod.start.setFullYear(prevPeriod.start.getFullYear() - 1);
+                prevPeriod.end = new Date(currentPeriod.end); prevPeriod.end.setFullYear(prevPeriod.end.getFullYear() - 1); break;
+            case 'month': default:
+                currentPeriod.start = new Date(today.getFullYear(), today.getMonth(), 1); currentPeriod.end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                prevPeriod.start = new Date(today.getFullYear(), today.getMonth() - 1, 1); prevPeriod.end = new Date(today.getFullYear(), today.getMonth(), 0); break;
         }
         return { currentPeriod, prevPeriod };
     }
     
     function updateChartButtonStyles() {
-        kpiRangeBtns.forEach(btn => {
-            if (btn.dataset.range === viewOptions.dashboardDateRange) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
+        kpiRangeBtns.forEach(btn => { if (btn.dataset.range === viewOptions.dashboardDateRange) { btn.classList.add('active'); } else { btn.classList.remove('active'); } });
         Object.values(chartTypeBtns).forEach(btn => btn.classList.remove('active'));
         chartTypeBtns[viewOptions.chartDataType].classList.add('active');
     }
 
     function renderDonutChart(instance, canvas, entries, type) {
         if (instance) instance.destroy();
-
         const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1);
-
-        const dataMap = entries
-            .filter(e => e.type === capitalizedType)
-            .reduce((acc, entry) => {
-                const key = entry.method || 'Other';
-                acc[key] = (acc[key] || 0) + entry.amount;
-                return acc;
-            }, {});
-
-        const labels = Object.keys(dataMap);
-        const data = Object.values(dataMap);
-        
+        const dataMap = entries.filter(e => e.type === capitalizedType).reduce((acc, entry) => { const key = entry.method || 'Other'; acc[key] = (acc[key] || 0) + entry.amount; return acc; }, {});
+        const labels = Object.keys(dataMap); const data = Object.values(dataMap);
         const noDataMessage = capitalizedType === 'Income' ? 'No income data for this period.' : 'No expense data for this period.';
-        if (labels.length === 0) {
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#6b7280';
-            ctx.font = '14px "Inter", sans-serif';
-            ctx.fillText(noDataMessage, canvas.width / 2, canvas.height / 2);
-            ctx.restore();
-            return null;
-        }
-
-        const colorPalettes = {
-            Expense: ['#f97316', '#facc15', '#2563eb'], // Orange, Yellow, Blue for MTN, Airtel, Bank
-            Income: ['#84cc16', '#22c55e', '#10b981']  // Lime, Green, Teal for MTN, Airtel, Bank
-        };
-
-        return new Chart(canvas, {
-            type: 'doughnut',
-            data: { labels, datasets: [{ label: capitalizedType, data, backgroundColor: colorPalettes[capitalizedType] }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } } }
-        });
+        if (labels.length === 0) { const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#6b7280'; ctx.font = '14px "Inter", sans-serif'; ctx.fillText(noDataMessage, canvas.width / 2, canvas.height / 2); ctx.restore(); return null; }
+        const colorPalettes = { Expense: ['#f97316', '#facc15', '#2563eb'], Income: ['#84cc16', '#22c55e', '#10b981'] };
+        return new Chart(canvas, { type: 'doughnut', data: { labels, datasets: [{ label: capitalizedType, data, backgroundColor: colorPalettes[capitalizedType] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } } } });
     }
 
     function groupDataByInterval(entries, interval, period) {
-        const dataMap = new Map();
-        let currentDate = new Date(period.start);
-        
-        while(currentDate <= period.end) {
-            const key = interval === 'day' 
-                ? currentDate.toLocaleDateString('en-CA') // YYYY-MM-DD format
-                : `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-            dataMap.set(key, 0);
-
-            if(interval === 'day') {
-                currentDate.setDate(currentDate.getDate() + 1);
-            } else {
-                currentDate.setMonth(currentDate.getMonth() + 1);
-            }
-        }
-        
-        entries.forEach(entry => {
-            const entryDate = new Date(entry.date);
-            entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset()); // Adjust for UTC
-            const key = interval === 'day' 
-                ? entryDate.toLocaleDateString('en-CA')
-                : `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}`;
-            
-            if(dataMap.has(key)) {
-                dataMap.set(key, dataMap.get(key) + entry.amount);
-            }
-        });
-
-        const labels = [...dataMap.keys()].map(key => {
-            if(interval === 'day') {
-                const [y, m, d] = key.split('-');
-                return `${d}/${m}`;
-            }
-            const [y, m] = key.split('-');
-            return new Date(y, m-1).toLocaleString('default', { month: 'short' });
-        });
-        
+        const dataMap = new Map(); let currentDate = new Date(period.start);
+        while(currentDate <= period.end) { const key = getIntervalKey(currentDate, interval); dataMap.set(key, 0); if (interval === 'day') { currentDate.setDate(currentDate.getDate() + 1); } else if (interval === 'month') { currentDate.setMonth(currentDate.getMonth() + 1); } else if (interval === 'quarter') { currentDate.setMonth(currentDate.getMonth() + 3); } }
+        entries.forEach(entry => { const entryDate = new Date(entry.date); entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset()); const key = getIntervalKey(entryDate, interval); if(dataMap.has(key)) { dataMap.set(key, dataMap.get(key) + entry.amount); } });
+        const labels = [...dataMap.keys()].map(key => { if(interval === 'day') { const [y, m, d] = key.split('-'); return `${d}/${m}`; } if (interval === 'month') { const [y, m] = key.split('-'); return new Date(y, m-1).toLocaleString('default', { month: 'short' }); } if (interval === 'quarter') { const [y, q] = key.split('-'); return `${q} '${y.slice(2)}`; } });
         return { labels, data: [...dataMap.values()]};
     }
 
     function calculateNetBalanceOverTime(entries, interval, period) {
-        const sortedEntries = [...entries].sort((a,b) => new Date(a.date) - new Date(b.date));
-        const balanceMap = new Map();
-        let currentDate = new Date(period.start);
-        
-        while(currentDate <= period.end) {
-            const key = interval === 'day' 
-                ? currentDate.toLocaleDateString('en-CA')
-                : `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
-            balanceMap.set(key, 0);
-
-            if(interval === 'day') {
-                currentDate.setDate(currentDate.getDate() + 1);
-            } else {
-                currentDate.setMonth(currentDate.getMonth() + 1);
-            }
-        }
-
-        sortedEntries.forEach(entry => {
-            const entryDate = new Date(entry.date);
-            entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset());
-            const key = interval === 'day' 
-                ? entryDate.toLocaleDateString('en-CA')
-                : `${entryDate.getFullYear()}-${String(entryDate.getMonth() + 1).padStart(2, '0')}`;
-            
-            const value = entry.type === 'Income' ? entry.amount : -entry.amount;
-            if (balanceMap.has(key)) {
-                balanceMap.set(key, balanceMap.get(key) + value);
-            }
-        });
-
-        let cumulativeBalance = 0;
-        const finalData = [];
-        balanceMap.forEach(value => {
-            cumulativeBalance += value;
-            finalData.push(cumulativeBalance);
-        });
-
-        const labels = [...balanceMap.keys()].map(key => {
-            if(interval === 'day') {
-                const [y, m, d] = key.split('-');
-                return `${d}/${m}`;
-            }
-            const [y, m] = key.split('-');
-            return new Date(y, m-1).toLocaleString('default', { month: 'short' });
-        });
-
+        const sortedEntries = [...entries].sort((a,b) => new Date(a.date) - new Date(b.date)); const balanceMap = new Map(); let currentDate = new Date(period.start);
+        while(currentDate <= period.end) { const key = getIntervalKey(currentDate, interval); balanceMap.set(key, 0); if (interval === 'day') { currentDate.setDate(currentDate.getDate() + 1); } else if (interval === 'month') { currentDate.setMonth(currentDate.getMonth() + 1); } else if (interval === 'quarter') { currentDate.setMonth(currentDate.getMonth() + 3); } }
+        sortedEntries.forEach(entry => { const entryDate = new Date(entry.date); entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset()); const key = getIntervalKey(entryDate, interval); const value = entry.type === 'Income' ? entry.amount : -entry.amount; if (balanceMap.has(key)) { balanceMap.set(key, balanceMap.get(key) + value); } });
+        let cumulativeBalance = 0; const finalData = [];
+        balanceMap.forEach(value => { cumulativeBalance += value; finalData.push(cumulativeBalance); });
+        const labels = [...balanceMap.keys()].map(key => { if(interval === 'day') { const [y, m, d] = key.split('-'); return `${d}/${m}`; } if (interval === 'month') { const [y, m] = key.split('-'); return new Date(y, m-1).toLocaleString('default', { month: 'short' }); } if (interval === 'quarter') { const [y, q] = key.split('-'); return `${q} '${y.slice(2)}`; } });
         return { labels, data: finalData };
     }
 
-    function renderBarChart(instance, canvas, label, chartData, color) {
-        if (instance) instance.destroy();
-        return new Chart(canvas, {
-            type: 'bar',
-            data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, backgroundColor: color }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label }, legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-        });
-    }
+    function renderBarChart(instance, canvas, label, chartData, color) { if (instance) instance.destroy(); return new Chart(canvas, { type: 'bar', data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, backgroundColor: color }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label }, legend: { display: false } }, scales: { y: { beginAtZero: true } } } }); }
+    function renderAreaChart(instance, canvas, label, chartData) { if (instance) instance.destroy(); return new Chart(canvas, { type: 'line', data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, fill: true, borderColor: '#4338ca', backgroundColor: 'rgba(79, 70, 229, 0.1)', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label }, legend: { display: false } }, scales: { y: { beginAtZero: false } } } }); }
+    function assembleAndValidateDate(dayInput, monthInput, yearInput) { let day = parseInt(dayInput.value, 10); let month = parseInt(monthInput.value, 10); let year = parseInt(yearInput.value, 10); if (!day || !month || !year || year.toString().length < 4) { showToast("Please enter a full date (DD, MM, YYYY).", 'error'); return null; } if (month < 1) month = 1; if (month > 12) month = 12; const daysInMonth = new Date(year, month, 0).getDate(); if (day > daysInMonth) { showToast(`Warning: ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} only has ${daysInMonth} days. Correcting date.`, 'info'); day = daysInMonth; } if (day < 1) day = 1; dayInput.value = String(day).padStart(2, '0'); monthInput.value = String(month).padStart(2, '0'); yearInput.value = String(year); return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`; }
+    function resetAllFilters() { sortBySelect.value = 'date_desc'; filterTypeSelect.value = 'all'; filterMethodSelect.value = 'all'; searchInput.value = ''; startDateInput.value = ''; endDateInput.value = ''; viewOptions.sortBy = 'date_desc'; viewOptions.filterByType = 'all'; viewOptions.filterByMethod = 'all'; viewOptions.searchTerm = ''; viewOptions.startDate = null; viewOptions.endDate = null; viewOptions.currentPage = 1; selectedEntryIds.clear(); renderTable(); }
 
-    function renderAreaChart(instance, canvas, label, chartData) {
-        if (instance) instance.destroy();
-        return new Chart(canvas, {
-            type: 'line',
-            data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, fill: true, borderColor: '#4338ca', backgroundColor: 'rgba(79, 70, 229, 0.1)', tension: 0.3 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label }, legend: { display: false } }, scales: { y: { beginAtZero: false } } }
-        });
-    }
+    // --- CRUD OPERATIONS & JOURNAL MANAGEMENT ---
 
-    function assembleAndValidateDate(dayInput, monthInput, yearInput) {
-        let day = parseInt(dayInput.value, 10);
-        let month = parseInt(monthInput.value, 10);
-        let year = parseInt(yearInput.value, 10);
+    function isJournalNameTaken(name, excludingId = null) { const lowerCaseName = name.trim().toLowerCase(); for (const id in appData.journals) { if (id === excludingId) continue; if (appData.journals[id].name.toLowerCase() === lowerCaseName) { return true; } } return false; }
+    function createNewJournal() { const journalName = window.prompt("Enter a name for the new journal:", "New Journal"); if (!journalName || journalName.trim() === '') return; if (isJournalNameTaken(journalName)) { showToast(`A journal named '${journalName.trim()}' already exists.`, "error"); return; } const newId = `journal_${Date.now()}`; appData.journals[newId] = { name: journalName.trim(), entries: [], lastModified: new Date().toISOString() }; appData.activeJournalId = newId; viewOptions.currentJournalView = newId; saveDataToFirestore(); }
+    function renameActiveJournal(journalId) { const activeJournal = appData.journals[journalId]; if (!activeJournal) return; const newName = window.prompt("Enter new name for the journal:", activeJournal.name); if (!newName || newName.trim() === '' || newName.trim() === activeJournal.name) return; if (isJournalNameTaken(newName, journalId)) { showToast(`A journal named '${newName.trim()}' already exists.`, "error"); return; } activeJournal.name = newName.trim(); saveDataToFirestore(true).then(() => showToast("Journal renamed!", "success")); }
+    function deleteActiveJournal(journalId) { const journalName = appData.journals[journalId]?.name; if (!journalId || !journalName) return; delete appData.journals[journalId]; const remainingIds = Object.keys(appData.journals); appData.activeJournalId = remainingIds.length > 0 ? remainingIds[0] : null; if (viewOptions.currentJournalView === journalId) { viewOptions.currentJournalView = 'all'; } saveDataToFirestore().then(() => showToast(`'${journalName}' deleted.`, "info")); }
+    function addEntry(e) { e.preventDefault(); if (viewOptions.currentJournalView === 'all' || !appData.activeJournalId) { showToast("Please select a specific journal to add an entry.", "error"); return; } const activeJournal = appData.journals[appData.activeJournalId]; if (!activeJournal) return; const formattedDate = assembleAndValidateDate(dateDayInput, dateMonthInput, dateYearInput); if (!formattedDate) return; const lastUsedDay = dateDayInput.value; const lastUsedMonth = dateMonthInput.value; const lastUsedYear = dateYearInput.value; const lastUsedType = typeSelect.value; const lastUsedMethod = methodSelect.value; if (!activeJournal.entries) activeJournal.entries = []; activeJournal.entries.push({ id: `entry_${Date.now()}`, date: formattedDate, type: lastUsedType, method: lastUsedMethod, narration: narrationInput.value.trim(), amount: parseFloat(amountInput.value) }); saveDataToFirestore(true).then(() => { showToast("Entry added", "success"); narrationInput.value = ''; amountInput.value = ''; dateDayInput.value = lastUsedDay; dateMonthInput.value = lastUsedMonth; dateYearInput.value = lastUsedYear; typeSelect.value = lastUsedType; methodSelect.value = lastUsedMethod; narrationInput.focus(); }); }
+    function openEditModal(entryId) { let entry, journalId; for (const jId in appData.journals) { const foundEntry = appData.journals[jId].entries.find(e => e.id === entryId); if (foundEntry) { entry = foundEntry; journalId = jId; break; } } if (!entry) return; document.getElementById('editEntryId').value = entry.id; const [year, month, day] = entry.date.split('-'); editDateDayInput.value = day; editDateMonthInput.value = month; editDateYearInput.value = year; document.getElementById('editType').value = entry.type; document.getElementById('editMethod').value = entry.method; document.getElementById('editNarration').value = entry.narration; document.getElementById('editAmount').value = entry.amount; editEntryModal.classList.remove('hidden'); }
+    function updateEntry(e) { e.preventDefault(); const entryId = document.getElementById('editEntryId').value; if (!entryId) return; let entryIndex, journalId; for (const jId in appData.journals) { const index = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (index !== -1) { entryIndex = index; journalId = jId; break; } } if (entryIndex === undefined) return; const formattedDate = assembleAndValidateDate(editDateDayInput, editDateMonthInput, editDateYearInput); if (!formattedDate) return; appData.journals[journalId].entries[entryIndex] = { id: entryId, date: formattedDate, type: document.getElementById('editType').value, method: document.getElementById('editMethod').value, narration: document.getElementById('editNarration').value.trim(), amount: parseFloat(document.getElementById('editAmount').value) }; saveDataToFirestore(true).then(() => showToast("Entry updated", "success")); editEntryModal.classList.add('hidden'); }
+    function deleteEntry(entryId) { let journalId; for (const jId in appData.journals) { if (appData.journals[jId].entries.some(e => e.id === entryId)) { journalId = jId; break; } } if (!journalId) return; appData.journals[journalId].entries = appData.journals[journalId].entries.filter(entry => entry.id !== entryId); saveDataToFirestore(true).then(() => showToast("Entry deleted", "info")); }
+    function updateBulkDeleteButton() { const count = selectedEntryIds.size; bulkDeleteBtn.textContent = `Delete Selected (${count})`; bulkDeleteBtn.classList.toggle('hidden', count === 0); }
+    function bulkDeleteEntries() { const count = selectedEntryIds.size; for (const jId in appData.journals) { appData.journals[jId].entries = appData.journals[jId].entries.filter(entry => !selectedEntryIds.has(entry.id)); } selectedEntryIds.clear(); saveDataToFirestore(true).then(() => showToast(`${count} entries deleted`, "info")); }
+    function showConfirmationModal(message, onConfirm) { modalMessage.textContent = message; confirmCallback = onConfirm; confirmationModal.classList.remove('hidden'); }
 
-        if (!day || !month || !year || year.toString().length < 4) {
-            showToast("Please enter a full date (DD, MM, YYYY).", 'error');
-            return null;
-        }
-
-        if (month < 1) month = 1;
-        if (month > 12) month = 12;
-
-        const daysInMonth = new Date(year, month, 0).getDate();
-
-        if (day > daysInMonth) {
-            showToast(`Warning: ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} only has ${daysInMonth} days. Correcting date.`, 'info');
-            day = daysInMonth;
-        }
-        
-        if (day < 1) day = 1;
-
-        dayInput.value = String(day).padStart(2, '0');
-        monthInput.value = String(month).padStart(2, '0');
-        yearInput.value = String(year);
-
-        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    }
-
-
-    function resetAllFilters() {
-        sortBySelect.value = 'date_desc'; 
-        filterTypeSelect.value = 'all';
-        filterMethodSelect.value = 'all'; 
-        searchInput.value = '';
-        startDateInput.value = '';
-        endDateInput.value = '';
-        viewOptions = {
-            ...viewOptions,
-            sortBy: 'date_desc', 
-            filterByType: 'all', 
-            filterByMethod: 'all', 
-            searchTerm: '',
-            startDate: null,
-            endDate: null,
-            currentPage: 1,
-            dashboardDateRange: 'month',
-        };
-        selectedEntryIds.clear();
-        renderTable();
-    }
-
-    // --- CRUD OPERATIONS ---
-    function createNewJournal() {
-        const journalName = window.prompt("Enter a name for the new journal:", "New Journal");
-        if (!journalName || journalName.trim() === '') return; 
-        const newId = `journal_${Date.now()}`;
-        appData.journals[newId] = { name: journalName.trim(), entries: [], lastModified: new Date().toISOString() };
-        appData.activeJournalId = newId;
-        saveDataToFirestore().then(() => showToast("Journal created!", "success"));
-    }
-
-    function renameActiveJournal() {
-        const activeJournal = appData.journals[appData.activeJournalId];
-        if (!activeJournal) return;
-        const newName = window.prompt("Enter new name for the journal:", activeJournal.name);
-        if (newName && newName.trim() !== '') {
-            activeJournal.name = newName.trim();
-            saveDataToFirestore(true).then(() => showToast("Journal renamed!", "success"));
-        }
-    }
-
-    function deleteActiveJournal() {
-        const journalId = appData.activeJournalId;
-        const journalName = appData.journals[journalId]?.name;
-        if (!journalId || !journalName) return;
-        delete appData.journals[journalId];
-        const remainingIds = Object.keys(appData.journals);
-        appData.activeJournalId = remainingIds.length > 0 ? remainingIds[0] : null;
-        saveDataToFirestore().then(() => showToast(`'${journalName}' deleted.`, "info"));
-    }
-
-    function addEntry(e) {
-        e.preventDefault();
-        const activeJournal = appData.journals[appData.activeJournalId];
-        if (!activeJournal) return;
-        
-        const formattedDate = assembleAndValidateDate(dateDayInput, dateMonthInput, dateYearInput);
-        if (!formattedDate) return;
-
-        // **START: Logic for Persistent Date**
-        // Capture the validated date and other fields to use for the next entry.
-        const lastUsedDay = dateDayInput.value;
-        const lastUsedMonth = dateMonthInput.value;
-        const lastUsedYear = dateYearInput.value;
-        const lastUsedType = typeSelect.value;
-        const lastUsedMethod = methodSelect.value;
-        // **END: Logic for Persistent Date**
-
-        if (!activeJournal.entries) activeJournal.entries = [];
-        activeJournal.entries.push({
-          id: `entry_${Date.now()}`, date: formattedDate,
-          type: lastUsedType,
-          method: lastUsedMethod,
-          narration: narrationInput.value.trim(),
-          amount: parseFloat(amountInput.value)
-        });
-
-        saveDataToFirestore(true).then(() => {
-            showToast("Entry added", "success");
-            
-            // Clear only the fields that change per entry
-            narrationInput.value = '';
-            amountInput.value = '';
-            
-            // **START: Restore last used values**
-            // Keep the date and dropdowns the same for the next entry
-            dateDayInput.value = lastUsedDay;
-            dateMonthInput.value = lastUsedMonth;
-            dateYearInput.value = lastUsedYear;
-            typeSelect.value = lastUsedType;
-            methodSelect.value = lastUsedMethod;
-            // **END: Restore last used values**
-
-            narrationInput.focus();
-        });
-    }
-
-    function openEditModal(entryId) {
-        const entry = appData.journals[appData.activeJournalId]?.entries.find(e => e.id === entryId);
-        if (!entry) return;
-        document.getElementById('editEntryId').value = entry.id;
-
-        const [year, month, day] = entry.date.split('-');
-        editDateDayInput.value = day;
-        editDateMonthInput.value = month;
-        editDateYearInput.value = year;
-
-        document.getElementById('editType').value = entry.type;
-        document.getElementById('editMethod').value = entry.method;
-        document.getElementById('editNarration').value = entry.narration;
-        document.getElementById('editAmount').value = entry.amount;
-        editEntryModal.classList.remove('hidden');
-    }
-
-    function updateEntry(e) {
-        e.preventDefault();
-        const activeJournal = appData.journals[appData.activeJournalId];
-        const entryId = document.getElementById('editEntryId').value;
-        if (!activeJournal || !entryId) return;
-
-        const formattedDate = assembleAndValidateDate(editDateDayInput, editDateMonthInput, editDateYearInput);
-        if (!formattedDate) return;
-
-        const entryIndex = activeJournal.entries.findIndex(e => e.id === entryId);
-        if (entryIndex === -1) return;
-
-        activeJournal.entries[entryIndex] = {
-            id: entryId, date: formattedDate,
-            type: document.getElementById('editType').value,
-            method: document.getElementById('editMethod').value,
-            narration: document.getElementById('editNarration').value.trim(),
-            amount: parseFloat(document.getElementById('editAmount').value)
-        };
-        saveDataToFirestore(true).then(() => showToast("Entry updated", "success"));
-        editEntryModal.classList.add('hidden');
-    }
-
-    function deleteEntry(entryId) {
-        const activeJournal = appData.journals[appData.activeJournalId];
-        if (!activeJournal) return;
-        activeJournal.entries = activeJournal.entries.filter(entry => entry.id !== entryId);
-        saveDataToFirestore(true).then(() => showToast("Entry deleted", "info"));
-    }
-
-    function updateBulkDeleteButton() {
-        const count = selectedEntryIds.size;
-        bulkDeleteBtn.textContent = `Delete Selected (${count})`;
-        bulkDeleteBtn.classList.toggle('hidden', count === 0);
-    }
-
-    function bulkDeleteEntries() {
-        const activeJournal = appData.journals[appData.activeJournalId];
-        if (!activeJournal) return;
-        
-        const count = selectedEntryIds.size;
-        activeJournal.entries = activeJournal.entries.filter(entry => !selectedEntryIds.has(entry.id));
-        selectedEntryIds.clear();
-        
-        saveDataToFirestore(true).then(() => showToast(`${count} entries deleted`, "info"));
-    }
-    
-    function showConfirmationModal(message, onConfirm) {
-        modalMessage.textContent = message;
-        confirmCallback = onConfirm;
-        confirmationModal.classList.remove('hidden');
-    }
+    // START: REVISED MERGE LOGIC
+    function getYearsFromEntries(entries) { if (!entries || entries.length === 0) return new Set(); return new Set(entries.map(e => e.date.substring(0, 4))); }
+    function canJournalsBeMerged(sourceId, destId) { const sourceJournal = appData.journals[sourceId]; const destJournal = appData.journals[destId]; if (!sourceJournal || !destJournal) return false; const sourceYears = getYearsFromEntries(sourceJournal.entries); const destYears = getYearsFromEntries(destJournal.entries); if (sourceYears.size === 0 || destYears.size === 0) return true; const allYears = new Set([...sourceYears, ...destYears]); return allYears.size === 1; }
+    function toggleMergeMode() { isMergeModeActive = !isMergeModeActive; mergeDestinationId = null; if (isMergeModeActive) { mergeJournalBtn.textContent = "Cancel Merge"; mergeJournalBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700'); mergeJournalBtn.classList.add('bg-red-600', 'hover:bg-red-700'); mergeStatusMessage.textContent = "Step 1: Select the journal to merge INTO (Destination)."; mergeStatusMessage.classList.remove('hidden'); } else { mergeJournalBtn.textContent = "Merge Journals"; mergeJournalBtn.classList.remove('bg-red-600', 'hover:bg-red-700'); mergeJournalBtn.classList.add('bg-blue-600', 'hover:bg-blue-700'); mergeStatusMessage.classList.add('hidden'); } renderJournalCards(); }
+    function handleMergeSelection(selectedId) { if (!mergeDestinationId) { mergeDestinationId = selectedId; mergeStatusMessage.textContent = `Step 2: Select a journal to merge FROM (Source).`; renderJournalCards(); } else { const sourceId = selectedId; const destId = mergeDestinationId; const sourceName = appData.journals[sourceId].name; const destName = appData.journals[destId].name; const confirmationMessage = `Merge all entries from '${sourceName}' into '${destName}'? The '${sourceName}' journal will be deleted. This cannot be undone.`; showConfirmationModal(confirmationMessage, () => { const sourceEntries = appData.journals[sourceId].entries || []; appData.journals[destId].entries.push(...sourceEntries); appData.journals[destId].lastModified = new Date().toISOString(); delete appData.journals[sourceId]; saveDataToFirestore().then(() => { showToast("Journals merged successfully!", "success"); toggleMergeMode(); }); }); } }
+    // END: REVISED MERGE LOGIC
     
     // --- TAB CONTROL LOGIC ---
-    const handleTabSwitch = (activeTabKey) => {
-        Object.values(tabContents).forEach(content => content.classList.add('hidden'));
-        Object.values(tabButtons).forEach(button => {
-            button.classList.remove('bg-orange-500', 'text-white');
-            button.classList.add('text-gray-500', 'hover:bg-gray-200');
-        });
-        tabContents[activeTabKey].classList.remove('hidden');
-        tabButtons[activeTabKey].classList.add('bg-orange-500', 'text-white');
-        tabButtons[activeTabKey].classList.remove('text-gray-500', 'hover:bg-gray-200');
-    };
-
-    Object.keys(tabButtons).forEach(key => {
-        tabButtons[key].addEventListener('click', () => handleTabSwitch(key));
-    });
-
-    Object.keys(chartTypeBtns).forEach(key => {
-        chartTypeBtns[key].addEventListener('click', () => {
-            viewOptions.chartDataType = key;
-            renderDashboard();
-        });
-    });
-    
-    kpiRangeBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            viewOptions.dashboardDateRange = btn.dataset.range;
-            renderDashboard();
-        })
-    });
+    const handleTabSwitch = (activeTabKey) => { if (activeTabKey !== 'dashboard' && lastActiveJournalId !== null) { viewOptions.dashboardDateRange = 'month'; const journalToRestore = lastActiveJournalId; lastActiveJournalId = null; setActiveJournalView(journalToRestore); } if(isMergeModeActive) { toggleMergeMode(); } Object.values(tabContents).forEach(content => content.classList.add('hidden')); Object.values(tabButtons).forEach(button => { button.classList.remove('bg-orange-500', 'text-white'); button.classList.add('text-gray-500', 'hover:bg-gray-200'); }); tabContents[activeTabKey].classList.remove('hidden'); tabButtons[activeTabKey].classList.add('bg-orange-500', 'text-white'); tabButtons[activeTabKey].classList.remove('text-gray-500', 'hover:bg-gray-200'); };
+    Object.keys(tabButtons).forEach(key => { tabButtons[key].addEventListener('click', () => handleTabSwitch(key)); });
+    Object.keys(chartTypeBtns).forEach(key => { chartTypeBtns[key].addEventListener('click', () => { viewOptions.chartDataType = key; renderDashboard(); }); });
+    kpiRangeBtns.forEach(btn => { btn.addEventListener('click', () => { viewOptions.dashboardDateRange = btn.dataset.range; if (btn.dataset.range === 'all') { if (viewOptions.currentJournalView !== 'all') { lastActiveJournalId = viewOptions.currentJournalView; } setActiveJournalView('all'); } else { if (lastActiveJournalId) { const journalToRestore = lastActiveJournalId; lastActiveJournalId = null; setActiveJournalView(journalToRestore); } else { renderDashboard(); } } }) });
     
     // --- EVENT LISTENERS ---
-    userMenuButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        userMenu.classList.toggle('hidden');
-    });
-
-    window.addEventListener('click', (e) => {
-        if (!userMenu.classList.contains('hidden') && !userMenuButton.contains(e.target)) {
-            userMenu.classList.add('hidden');
-        }
-    });
-
-    // **START: Event Listeners for new date inputs**
-    function enforceMinMax(input) {
-      const value = parseInt(input.value, 10);
-      const min = parseInt(input.min, 10);
-      const max = parseInt(input.max, 10);
-      if (value > max) input.value = max;
-    }
-
-    function setupDateInputListeners(dayEl, monthEl, yearEl, pickerBtn, nativePicker) {
-      dayEl.addEventListener('input', () => enforceMinMax(dayEl));
-      monthEl.addEventListener('input', () => enforceMinMax(monthEl));
-      yearEl.addEventListener('input', () => {
-        if (yearEl.value.length > 4) {
-          yearEl.value = yearEl.value.slice(0, 4);
-        }
-      });
-
-      dayEl.addEventListener('keyup', () => { if (dayEl.value.length === 2) monthEl.focus(); });
-      monthEl.addEventListener('keyup', () => { if (monthEl.value.length === 2) yearEl.focus(); });
-
-      pickerBtn.addEventListener('click', () => {
-        try {
-          nativePicker.showPicker();
-        } catch (error) {
-          showToast("Your browser doesn't support this feature.", "error");
-        }
-      });
-
-      nativePicker.addEventListener('change', (e) => {
-        if (e.target.value) {
-          const [year, month, day] = e.target.value.split('-');
-          dayEl.value = day;
-          monthEl.value = month;
-          yearEl.value = year;
-        }
-      });
-    }
-    
+    userMenuButton.addEventListener('click', (e) => { e.stopPropagation(); userMenu.classList.toggle('hidden'); });
+    window.addEventListener('click', (e) => { if (!userMenu.classList.contains('hidden') && !userMenuButton.contains(e.target)) { userMenu.classList.add('hidden'); } });
+    function enforceMinMax(input) { const value = parseInt(input.value, 10); const min = parseInt(input.min, 10); const max = parseInt(input.max, 10); if (value > max) input.value = max; }
+    function setupDateInputListeners(dayEl, monthEl, yearEl, pickerBtn, nativePicker) { dayEl.addEventListener('input', () => enforceMinMax(dayEl)); monthEl.addEventListener('input', () => enforceMinMax(monthEl)); yearEl.addEventListener('input', () => { if (yearEl.value.length > 4) { yearEl.value = yearEl.value.slice(0, 4); } }); dayEl.addEventListener('keyup', () => { if (dayEl.value.length === 2) monthEl.focus(); }); monthEl.addEventListener('keyup', () => { if (monthEl.value.length === 2) yearEl.focus(); }); pickerBtn.addEventListener('click', () => { try { nativePicker.showPicker(); } catch (error) { showToast("Your browser doesn't support this feature.", "error"); } }); nativePicker.addEventListener('change', (e) => { if (e.target.value) { const [year, month, day] = e.target.value.split('-'); dayEl.value = day; monthEl.value = month; yearEl.value = year; } }); }
     setupDateInputListeners(dateDayInput, dateMonthInput, dateYearInput, datePickerBtn, nativeDatePicker);
     setupDateInputListeners(editDateDayInput, editDateMonthInput, editDateYearInput, editDatePickerBtn, editNativeDatePicker);
-    // **END: Event Listeners for new date inputs**
-
-    searchInput.addEventListener('input', (e) => {
-        viewOptions.searchTerm = e.target.value;
-        viewOptions.currentPage = 1;
-        renderTable();
-    });
-    
-    [sortBySelect, filterTypeSelect, filterMethodSelect].forEach(el => {
-        el.addEventListener('change', () => {
-            viewOptions.sortBy = sortBySelect.value;
-            viewOptions.filterByType = filterTypeSelect.value;
-            viewOptions.filterByMethod = filterMethodSelect.value;
-            viewOptions.currentPage = 1;
-            renderTable();
-        });
-    });
-
-    filterByDateBtn.addEventListener('click', () => {
-        viewOptions.startDate = startDateInput.value;
-        viewOptions.endDate = endDateInput.value;
-        viewOptions.currentPage = 1;
-        renderTable();
-    });
-
-    clearDateFilterBtn.addEventListener('click', () => {
-        startDateInput.value = '';
-        endDateInput.value = '';
-        viewOptions.startDate = null;
-        viewOptions.endDate = null;
-        viewOptions.currentPage = 1;
-        renderTable();
-    });
-
+    searchInput.addEventListener('input', (e) => { viewOptions.searchTerm = e.target.value; viewOptions.currentPage = 1; renderTable(); });
+    [sortBySelect, filterTypeSelect, filterMethodSelect].forEach(el => { el.addEventListener('change', () => { viewOptions.sortBy = sortBySelect.value; viewOptions.filterByType = filterTypeSelect.value; viewOptions.filterByMethod = filterMethodSelect.value; viewOptions.currentPage = 1; renderTable(); }); });
+    filterByDateBtn.addEventListener('click', () => { viewOptions.startDate = startDateInput.value; viewOptions.endDate = endDateInput.value; viewOptions.currentPage = 1; renderTable(); });
+    clearDateFilterBtn.addEventListener('click', () => { startDateInput.value = ''; endDateInput.value = ''; viewOptions.startDate = null; viewOptions.endDate = null; viewOptions.currentPage = 1; renderTable(); });
     resetFiltersBtn.addEventListener('click', resetAllFilters);
-
-    journalSelector.addEventListener('change', (e) => {
-        appData.activeJournalId = e.target.value;
-        saveDataToFirestore();
-    });
-
-    prevPageBtn.addEventListener('click', () => {
-        if (viewOptions.currentPage > 1) {
-            viewOptions.currentPage--;
-            renderTable();
-        }
-    });
-
-    nextPageBtn.addEventListener('click', () => {
-        viewOptions.currentPage++;
-        renderTable();
-    });
-    
+    journalCardsContainer.addEventListener('click', (e) => { const card = e.target.closest('.journal-card'); if (!card || card.classList.contains('disabled-card')) return; const journalId = card.dataset.id; if (isMergeModeActive) { if (e.target.classList.contains('select-merge-btn')) { handleMergeSelection(journalId); } return; } const isSelectAction = e.target.classList.contains('select-journal-btn') || !e.target.closest('button'); const isRenameAction = e.target.classList.contains('rename-journal-btn'); const isDeleteAction = e.target.classList.contains('delete-journal-btn'); if (isSelectAction) { setActiveJournalView(journalId); } else if (isRenameAction) { renameActiveJournal(journalId); } else if (isDeleteAction) { const name = appData.journals[journalId]?.name; if (name) showConfirmationModal(`Delete '${name}' and all its entries? This cannot be undone.`, () => deleteActiveJournal(journalId)); } });
+    prevPageBtn.addEventListener('click', () => { if (viewOptions.currentPage > 1) { viewOptions.currentPage--; renderTable(); } });
+    nextPageBtn.addEventListener('click', () => { viewOptions.currentPage++; renderTable(); });
     entryForm.addEventListener('submit', addEntry);
     editEntryForm.addEventListener('submit', updateEntry);
     createJournalBtn.addEventListener('click', createNewJournal);
-    renameJournalBtn.addEventListener('click', renameActiveJournal);
-    deleteJournalBtn.addEventListener('click', () => {
-        const name = appData.journals[appData.activeJournalId]?.name;
-        if(name) showConfirmationModal(`Delete '${name}' and all its entries? This cannot be undone.`, deleteActiveJournal);
-    });
-
-    bulkDeleteBtn.addEventListener('click', () => {
-        showConfirmationModal(`Are you sure you want to delete ${selectedEntryIds.size} selected entries? This cannot be undone.`, bulkDeleteEntries);
-    });
-    
-    const handleTableClick = (e) => {
-        if (e.target.classList.contains('delete-btn')) {
-            showConfirmationModal("Are you sure you want to delete this entry?", () => deleteEntry(e.target.dataset.id));
-        }
-        if (e.target.classList.contains('edit-btn')) {
-            openEditModal(e.target.dataset.id);
-        }
-        if (e.target.classList.contains('row-checkbox')) {
-            const id = e.target.dataset.id;
-            if (e.target.checked) {
-                selectedEntryIds.add(id);
-            } else {
-                selectedEntryIds.delete(id);
-            }
-            updateBulkDeleteButton();
-        }
-    };
+    mergeJournalBtn.addEventListener('click', toggleMergeMode);
+    bulkDeleteBtn.addEventListener('click', () => { showConfirmationModal(`Are you sure you want to delete ${selectedEntryIds.size} selected entries? This cannot be undone.`, bulkDeleteEntries); });
+    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { showConfirmationModal("Are you sure you want to delete this entry?", () => deleteEntry(e.target.dataset.id)); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
     tableBody.addEventListener('click', handleTableClick);
     recentEntriesBody.addEventListener('click', handleTableClick);
-
-    selectAllCheckbox.addEventListener('change', (e) => {
-        const checkboxes = tableBody.querySelectorAll('.row-checkbox');
-        checkboxes.forEach(checkbox => {
-            const id = checkbox.dataset.id;
-            checkbox.checked = e.target.checked;
-            if (e.target.checked) {
-                selectedEntryIds.add(id);
-            } else {
-                selectedEntryIds.delete(id);
-            }
-        });
-        updateBulkDeleteButton();
-    });
-
-    modalConfirmBtn.addEventListener('click', () => {
-        if (typeof confirmCallback === 'function') {
-            confirmCallback();
-            confirmCallback = null;
-        }
-        confirmationModal.classList.add('hidden');
-    });
-
+    selectAllCheckbox.addEventListener('change', (e) => { const checkboxes = tableBody.querySelectorAll('.row-checkbox'); checkboxes.forEach(checkbox => { const id = checkbox.dataset.id; checkbox.checked = e.target.checked; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } }); updateBulkDeleteButton(); });
+    modalConfirmBtn.addEventListener('click', () => { if (typeof confirmCallback === 'function') { confirmCallback(); confirmCallback = null; } confirmationModal.classList.add('hidden'); });
     modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
     editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden'));
-
     importBackupBtn.addEventListener('click', () => fileImporter.click());
-    fileImporter.addEventListener('change', (event) => {
-        const file = event.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const importedData = JSON.parse(e.target.result);
-                if (importedData && importedData.journals && importedData.activeJournalId) {
-                    showConfirmationModal(
-                        "This will overwrite ALL your cloud data with this backup. This cannot be undone.",
-                        () => {
-                            appData = importedData;
-                            saveDataToFirestore().then(() => showToast("Backup imported successfully!", "success"));
-                        }
-                    );
-                } else { throw new Error("Invalid backup file format."); }
-            } catch (err) { showToast(err.message, "error"); }
-        };
-        reader.readAsText(file);
-        event.target.value = null; 
+    fileImporter.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { importedDataCache = JSON.parse(e.target.result); if (importedDataCache && importedDataCache.journals) { importOptionsModal.classList.remove('hidden'); } else { throw new Error("Invalid backup file format."); } } catch (err) { showToast(err.message, "error"); importedDataCache = null; } }; reader.readAsText(file); event.target.value = null; });
+    importCancelBtn.addEventListener('click', () => { importOptionsModal.classList.add('hidden'); importedDataCache = null; });
+
+    // START: FIX FOR IMPORT OVERWRITE
+    importMergeBtn.addEventListener('click', () => {
+        if (!importedDataCache || !importedDataCache.journals) return;
+        Object.keys(importedDataCache.journals).forEach((journalId, index) => {
+            const journalToImport = importedDataCache.journals[journalId];
+            let finalName = journalToImport.name.trim();
+            let counter = 1;
+            while (isJournalNameTaken(finalName)) {
+                finalName = `${journalToImport.name.trim()} (${counter})`;
+                counter++;
+            }
+            const newJournal = { ...journalToImport, name: finalName, entries: journalToImport.entries || [] };
+            const newId = `journal_imported_${Date.now()}_${index}`;
+            appData.journals[newId] = newJournal;
+        });
+        saveDataToFirestore().then(() => {
+            showToast("Backup data merged successfully!", "success");
+            importOptionsModal.classList.add('hidden');
+            importedDataCache = null;
+        });
     });
+    // END: FIX FOR IMPORT OVERWRITE
     
-    downloadBackupBtn.addEventListener('click', () => {
-        if (!currentUser) return;
-        const dataStr = JSON.stringify(appData, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `tck_backup_${new Date().toISOString().slice(0,10)}.json`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
-    downloadBtn.addEventListener('click', async () => {
-        const activeJournal = appData.journals[appData.activeJournalId];
-        if (!activeJournal || !activeJournal.entries || activeJournal.entries.length === 0) return;
-
-        downloadBtn.disabled = true;
-        showToast('Preparing your workbook...', 'info');
-
-        try {
-            const pyodide = await loadPy();
-            pyodide.globals.set('entries_json', JSON.stringify(activeJournal.entries));
-            pyodide.globals.set('journal_name_js', activeJournal.name);
-            
-            const base64Data = await pyodide.runPythonAsync(`
-import json, io, base64
-from datetime import datetime
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-from itertools import groupby
-from collections import defaultdict
-
-# --- Styling Definitions ---
-header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFFFF')
-subheader_font = Font(name='Calibri', size=11, bold=True)
-vertical_month_font = Font(name='Calibri', size=28, bold=True)
-data_font = Font(name='Calibri', size=11)
-center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
-right_align = Alignment(horizontal='right', vertical='center', wrap_text=True)
-vertical_align = Alignment(text_rotation=90, vertical='center', horizontal='center')
-blue_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
-orange_fill = PatternFill(start_color='ED7D31', end_color='ED7D31', fill_type='solid')
-black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')
-thin_side = Side(style='thin', color='000000')
-thin_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
-currency_format = '"UGX"* #,##0'
-MIN_ROWS_PER_MONTH = 35
-
-# --- Table Creation Function ---
-def create_month_table(worksheet, start_row, month_name, income_entries, expense_entries):
-    worksheet.merge_cells(start_row=start_row, start_column=3, end_row=start_row, end_column=5); cell = worksheet.cell(start_row, 3); cell.value = 'INCOME'; cell.fill = blue_fill; cell.font = header_font; cell.alignment = center_align
-    worksheet.merge_cells(start_row=start_row, start_column=7, end_row=start_row, end_column=9); cell = worksheet.cell(start_row, 7); cell.value = 'EXPENSES'; cell.fill = orange_fill; cell.font = header_font; cell.alignment = center_align
-    
-    income_headers = {'C': 'Date', 'D': 'Amount', 'E': 'Narration'}
-    expense_headers = {'G': 'Date', 'H': 'Amount', 'I': 'Narration'}
-
-    for col_char, text in income_headers.items():
-        cell = worksheet[f'{col_char}{start_row+1}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
-    for col_char, text in expense_headers.items():
-        cell = worksheet[f'{col_char}{start_row+1}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
-
-    # --- Populate Income Data ---
-    current_income_row = start_row + 2
-    for date, group in groupby(income_entries, key=lambda x: x.get('date')):
-        group_list = list(group)
-        num_entries = len(group_list)
-        date_obj = datetime.strptime(date, '%Y-%m-%d')
-        date_cell = worksheet.cell(row=current_income_row, column=3, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align
-        if num_entries > 1: worksheet.merge_cells(start_row=current_income_row, start_column=3, end_row=current_income_row + num_entries - 1, end_column=3)
-        for i, entry in enumerate(group_list):
-            row_idx = current_income_row + i
-            worksheet.cell(row=row_idx, column=4, value=entry.get('amount')).number_format = currency_format; worksheet.cell(row=row_idx, column=4).font = data_font
-            narration_cell = worksheet.cell(row=row_idx, column=5, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align
-        current_income_row += num_entries
-
-    # --- Populate Expense Data ---
-    current_expense_row = start_row + 2
-    for date, group in groupby(expense_entries, key=lambda x: x.get('date')):
-        group_list = list(group)
-        num_entries = len(group_list)
-        date_obj = datetime.strptime(date, '%Y-%m-%d')
-        date_cell = worksheet.cell(row=current_expense_row, column=7, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align
-        if num_entries > 1: worksheet.merge_cells(start_row=current_expense_row, start_column=7, end_row=current_expense_row + num_entries - 1, end_column=7)
-        for i, entry in enumerate(group_list):
-            row_idx = current_expense_row + i
-            worksheet.cell(row=row_idx, column=8, value=entry.get('amount')).number_format = currency_format; worksheet.cell(row=row_idx, column=8).font = data_font
-            narration_cell = worksheet.cell(row=row_idx, column=9, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align
-        current_expense_row += num_entries
-        
-    table_end_row = max(current_income_row, current_expense_row, start_row + MIN_ROWS_PER_MONTH)
-    for r in range(start_row, table_end_row):
-        worksheet[f'F{r}'].fill = black_fill
-    for r in range(start_row, table_end_row):
-      for c_ord in list(range(ord('C'), ord('F'))) + list(range(ord('G'), ord('J'))):
-            worksheet.cell(row=r, column=c_ord - ord('A') + 1).border = thin_border
-            
-    data_start_row = start_row + 2
-    if data_start_row < table_end_row:
-        worksheet.merge_cells(start_row=data_start_row, start_column=1, end_row=table_end_row - 1, end_column=1)
-        cell = worksheet.cell(row=data_start_row, column=1); cell.value = month_name.upper(); cell.font = vertical_month_font; cell.alignment = vertical_align
-        
-    return table_end_row
-
-# --- Main Script Logic ---
-wb = Workbook()
-ws_mtn = wb.create_sheet("MTN")
-ws_airtel = wb.create_sheet("Airtel")
-ws_bank = wb.create_sheet("Bank")
-if 'Sheet' in wb.sheetnames:
-    wb.remove(wb['Sheet'])
-
-entries = sorted([e for e in json.loads(entries_json) if e.get('date')], key=lambda x: x['date'])
-
-mtn_entries = [e for e in entries if e.get('method') == 'MTN']
-airtel_entries = [e for e in entries if e.get('method') == 'Airtel']
-bank_entries = [e for e in entries if e.get('method') == 'Bank']
-
-data_by_method = {
-    "MTN": (ws_mtn, mtn_entries),
-    "Airtel": (ws_airtel, airtel_entries),
-    "Bank": (ws_bank, bank_entries)
-}
-
-column_widths = {'A': 5, 'B': 1, 'C': 12, 'D': 15, 'E': 30, 'F': 1.5, 'G': 12, 'H': 15, 'I': 30}
-
-for method, (worksheet, method_entries) in data_by_method.items():
-    for col, width in column_widths.items():
-        worksheet.column_dimensions[col].width = width
-        
-    monthly_data = defaultdict(lambda: {'income': [], 'expense': []})
-    for entry in method_entries:
-        month_key = datetime.strptime(entry['date'], '%Y-%m-%d').strftime('%Y-%m')
-        if entry['type'] == 'Income':
-            monthly_data[month_key]['income'].append(entry)
-        else:
-            monthly_data[month_key]['expense'].append(entry)
-    
-    current_row = 2
-    if not monthly_data:
-        create_month_table(worksheet, current_row, "No Data", [], [])
-    else:
-        for month_key in sorted(monthly_data.keys()):
-            month_name = datetime.strptime(month_key, '%Y-%m').strftime('%B')
-            data = monthly_data[month_key]
-            current_row = create_month_table(worksheet, current_row, month_name, data['income'], data['expense']) + 3
-
-bio = io.BytesIO(); wb.save(bio)
-base64.b64encode(bio.getvalue()).decode('utf-8')
-`);
-            showToast('Download starting...', 'success');
-            const blob = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-            const url = URL.createObjectURL(new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${activeJournal.name.replace(/ /g, '_')}_Journal.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } catch (err) {
-            console.error('Error generating file:', err);
-            showToast('Error! Could not generate file.', 'error');
-        } finally {
-            downloadBtn.disabled = getFilteredEntries().length === 0;
-            statusMessage.textContent = '';
-        }
-    });
+    importReplaceBtn.addEventListener('click', () => { if (!importedDataCache) return; importOptionsModal.classList.add('hidden'); showConfirmationModal( "This will permanently delete ALL your current cloud data and replace it with this backup. This cannot be undone.", () => { appData = importedDataCache; saveDataToFirestore().then(() => { showToast("Backup imported successfully!", "success"); importedDataCache = null; }); }); });
+    downloadBackupBtn.addEventListener('click', () => { if (!currentUser) return; const dataStr = JSON.stringify(appData, null, 2); const blob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `tck_backup_${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); });
+    downloadBtn.addEventListener('click', async () => { const entriesToDownload = getFilteredEntries(); let journalName = "Journal"; if (viewOptions.currentJournalView === 'all') { journalName = 'All_Journals'; } else { journalName = appData.journals[viewOptions.currentJournalView]?.name || "Journal"; } if (entriesToDownload.length === 0) { showToast("No entries to download in the current view.", "info"); return; } downloadBtn.disabled = true; showToast('Preparing your workbook...', 'info'); try { const pyodide = await loadPy(); pyodide.globals.set('entries_json', JSON.stringify(entriesToDownload)); pyodide.globals.set('journal_name_js', journalName); const base64Data = await pyodide.runPythonAsync(` import json, io, base64; from datetime import datetime; from openpyxl import Workbook; from openpyxl.styles import Font, Alignment, PatternFill, Border, Side; from itertools import groupby; from collections import defaultdict; header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFFFF'); subheader_font = Font(name='Calibri', size=11, bold=True); vertical_month_font = Font(name='Calibri', size=28, bold=True); data_font = Font(name='Calibri', size=11); center_align = Alignment(horizontal='center', vertical='center', wrap_text=True); right_align = Alignment(horizontal='right', vertical='center', wrap_text=True); vertical_align = Alignment(text_rotation=90, vertical='center', horizontal='center'); blue_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid'); orange_fill = PatternFill(start_color='ED7D31', end_color='ED7D31', fill_type='solid'); black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid'); thin_side = Side(style='thin', color='000000'); thin_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side); currency_format = '"UGX"* #,##0'; MIN_ROWS_PER_MONTH = 35; def create_month_table(worksheet, start_row, month_name, income_entries, expense_entries): worksheet.merge_cells(start_row=start_row, start_column=3, end_row=start_row, end_column=5); cell = worksheet.cell(start_row, 3); cell.value = 'INCOME'; cell.fill = blue_fill; cell.font = header_font; cell.alignment = center_align; worksheet.merge_cells(start_row=start_row, start_column=7, end_row=start_row, end_column=9); cell = worksheet.cell(start_row, 7); cell.value = 'EXPENSES'; cell.fill = orange_fill; cell.font = header_font; cell.alignment = center_align; income_headers = {'C': 'Date', 'D': 'Amount', 'E': 'Narration'}; expense_headers = {'G': 'Date', 'H': 'Amount', 'I': 'Narration'}; [setattr(worksheet[f'{col_char}{start_row+1}'], 'value', text) or setattr(worksheet[f'{col_char}{start_row+1}'], 'font', subheader_font) or setattr(worksheet[f'{col_char}{start_row+1}'], 'alignment', center_align) for col_char, text in income_headers.items()]; [setattr(worksheet[f'{col_char}{start_row+1}'], 'value', text) or setattr(worksheet[f'{col_char}{start_row+1}'], 'font', subheader_font) or setattr(worksheet[f'{col_char}{start_row+1}'], 'alignment', center_align) for col_char, text in expense_headers.items()]; current_income_row = start_row + 2; for date, group in groupby(income_entries, key=lambda x: x.get('date')): group_list = list(group); num_entries = len(group_list); date_obj = datetime.strptime(date, '%Y-%m-%d'); date_cell = worksheet.cell(row=current_income_row, column=3, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align; [worksheet.merge_cells(start_row=current_income_row, start_column=3, end_row=current_income_row + num_entries - 1, end_column=3) if num_entries > 1 else None]; [setattr(worksheet.cell(row=current_income_row + i, column=4), 'value', entry.get('amount')) or setattr(worksheet.cell(row=current_income_row + i, column=4), 'number_format', currency_format) or setattr(worksheet.cell(row=current_income_row + i, column=4), 'font', data_font) or setattr(worksheet.cell(row=current_income_row + i, column=5), 'value', entry.get('narration')) or setattr(worksheet.cell(row=current_income_row + i, column=5), 'font', data_font) or setattr(worksheet.cell(row=current_income_row + i, column=5), 'alignment', right_align) for i, entry in enumerate(group_list)]; current_income_row += num_entries; current_expense_row = start_row + 2; for date, group in groupby(expense_entries, key=lambda x: x.get('date')): group_list = list(group); num_entries = len(group_list); date_obj = datetime.strptime(date, '%Y-%m-%d'); date_cell = worksheet.cell(row=current_expense_row, column=7, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align; [worksheet.merge_cells(start_row=current_expense_row, start_column=7, end_row=current_expense_row + num_entries - 1, end_column=7) if num_entries > 1 else None]; [setattr(worksheet.cell(row=current_expense_row + i, column=8), 'value', entry.get('amount')) or setattr(worksheet.cell(row=current_expense_row + i, column=8), 'number_format', currency_format) or setattr(worksheet.cell(row=current_expense_row + i, column=8), 'font', data_font) or setattr(worksheet.cell(row=current_expense_row + i, column=9), 'value', entry.get('narration')) or setattr(worksheet.cell(row=current_expense_row + i, column=9), 'font', data_font) or setattr(worksheet.cell(row=current_expense_row + i, column=9), 'alignment', right_align) for i, entry in enumerate(group_list)]; current_expense_row += num_entries; table_end_row = max(current_income_row, current_expense_row, start_row + MIN_ROWS_PER_MONTH); [setattr(worksheet[f'F{r}'], 'fill', black_fill) for r in range(start_row, table_end_row)]; [[setattr(worksheet.cell(row=r, column=c_ord - ord('A') + 1), 'border', thin_border) for c_ord in list(range(ord('C'), ord('F'))) + list(range(ord('G'), ord('J')))] for r in range(start_row, table_end_row)]; data_start_row = start_row + 2; [worksheet.merge_cells(start_row=data_start_row, start_column=1, end_row=table_end_row - 1, end_column=1) or setattr(worksheet.cell(row=data_start_row, column=1), 'value', month_name.upper()) or setattr(worksheet.cell(row=data_start_row, column=1), 'font', vertical_month_font) or setattr(worksheet.cell(row=data_start_row, column=1), 'alignment', vertical_align) if data_start_row < table_end_row else None]; return table_end_row; wb = Workbook(); ws_mtn = wb.create_sheet("MTN"); ws_airtel = wb.create_sheet("Airtel"); ws_bank = wb.create_sheet("Bank"); [wb.remove(wb['Sheet']) if 'Sheet' in wb.sheetnames else None]; entries = sorted([e for e in json.loads(entries_json) if e.get('date')], key=lambda x: x['date']); mtn_entries = [e for e in entries if e.get('method') == 'MTN']; airtel_entries = [e for e in entries if e.get('method') == 'Airtel']; bank_entries = [e for e in entries if e.get('method') == 'Bank']; data_by_method = {"MTN": (ws_mtn, mtn_entries), "Airtel": (ws_airtel, airtel_entries), "Bank": (ws_bank, bank_entries)}; column_widths = {'A': 5, 'B': 1, 'C': 12, 'D': 15, 'E': 30, 'F': 1.5, 'G': 12, 'H': 15, 'I': 30}; for method, (worksheet, method_entries) in data_by_method.items(): [setattr(worksheet.column_dimensions[col], 'width', width) for col, width in column_widths.items()]; monthly_data = defaultdict(lambda: {'income': [], 'expense': []}); [monthly_data[datetime.strptime(entry['date'], '%Y-%m-%d').strftime('%Y-%m')]['income' if entry['type'] == 'Income' else 'expense'].append(entry) for entry in method_entries]; current_row = 2; [create_month_table(worksheet, current_row, "No Data", [], []) if not monthly_data else [globals().update(current_row=create_month_table(worksheet, current_row, datetime.strptime(month_key, '%Y-%m').strftime('%B'), monthly_data[month_key]['income'], monthly_data[month_key]['expense']) + 3) for month_key in sorted(monthly_data.keys())]]; bio = io.BytesIO(); wb.save(bio); base64.b64encode(bio.getvalue()).decode('utf-8'); `); showToast('Download starting...', 'success'); const blob = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)); const url = URL.createObjectURL(new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); const a = document.createElement('a'); a.href = url; a.download = `${journalName.replace(/ /g, '_')}_Journal.xlsx`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } catch (err) { console.error('Error generating file:', err); showToast('Error! Could not generate file.', 'error'); } finally { downloadBtn.disabled = getFilteredEntries().length === 0; statusMessage.textContent = ''; } });
 
   </script>
 </body>
