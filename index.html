@@ -633,12 +633,13 @@
   </button>
 
   <script type="module">
+    // --- SDK & LIBRARY IMPORTS ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, onSnapshot, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import Shepherd from 'https://cdn.jsdelivr.net/npm/shepherd.js@10.0.1/dist/js/shepherd.esm.min.js';
 
-    // --- FIREBASE CONFIG & OTHER SETUP (as before) ---
+    // --- FIREBASE CONFIG & INIT ---
     const firebaseConfig = { apiKey: "AIzaSyBP4p26TLOqL9muN5JndpUZolaunzQgKC0", authDomain: "ie-entry.firebaseapp.com", projectId: "ie-entry", storageBucket: "ie-entry.appspot.com", messagingSenderId: "864058205761", appId: "1:864058205761:web:a70f7e3e20f0df3a8708c0", measurementId: "G-327XF816YG" };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -745,7 +746,7 @@
     const tabContents = { dashboard: document.getElementById('dashboard-content-container'), add: document.getElementById('add-entry-content-container'), manage: document.getElementById('management-content-container'), data: document.getElementById('data-management-content-container'), };
 
     // --- APP STATE ---
-    let appData = {}, currentUser = null, unsubscribeFromFirestore = null, confirmCallback = null, importedDataCache = null, lastActiveJournalId = null;
+    let appData = {}, currentUser = null, unsubscribeFromFirestore = null, confirmCallback = null, importedDataCache = null, lastActiveSingleJournalId = null;
     let isMergeModeActive = false, mergeDestinationId = null;
     let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month' };
     let selectedEntryIds = new Set();
@@ -767,7 +768,7 @@
     async function loadPy() { if (!pyodideReadyPromise) { statusMessage.textContent = 'Initializing Excel exporter...'; pyodideReadyPromise = loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/" }).then(async (pyodide) => { statusMessage.textContent = 'Loading libraries...'; await pyodide.loadPackage(['micropip']); const micropip = pyodide.pyimport("micropip"); await micropip.install('openpyxl==3.1.2'); statusMessage.textContent = ''; return pyodide; }); } return pyodideReadyPromise; }
     
     // --- AUTHENTICATION ---
-    onAuthStateChanged(auth, (user) => { if (user) { currentUser = user; appView.classList.remove('hidden'); loginView.classList.add('hidden'); document.body.className = 'bg-gray-50 min-h-screen font-sans'; userEmailSpan.textContent = user.email; userEmailDropdown.textContent = user.email; loadDataFromFirestore(); loadPy(); setupInactivityListeners(); } else { currentUser = null; if (unsubscribeFromFirestore) unsubscribeFromFirestore(); appView.classList.add('hidden'); loginView.classList.remove('hidden'); document.body.className = 'bg-gray-100 min-h-screen font-sans'; userEmailSpan.textContent = ''; syncStatus.innerHTML = ''; appData = {}; updateUI(); removeInactivityListeners(); } });
+    onAuthStateChanged(auth, (user) => { const isLoggedIn = !!user; appView.classList.toggle('hidden', !isLoggedIn); loginView.classList.toggle('hidden', isLoggedIn); appHelpBtn.classList.toggle('hidden', !isLoggedIn); loginHelpBtn.classList.toggle('hidden', isLoggedIn); if (isLoggedIn) { currentUser = user; document.body.className = 'bg-gray-50 min-h-screen font-sans'; userEmailSpan.textContent = user.email; userEmailDropdown.textContent = user.email; loadDataFromFirestore(); loadPy(); setupInactivityListeners(); } else { currentUser = null; if (unsubscribeFromFirestore) unsubscribeFromFirestore(); document.body.className = 'bg-gray-100 min-h-screen font-sans'; userEmailSpan.textContent = ''; syncStatus.innerHTML = ''; appData = {}; updateUI(); removeInactivityListeners(); } });
     const goToPasswordStep = (submitAction) => { if (!emailInput.value) { emailAuthError.textContent = 'Please enter your email.'; return; } emailAuthError.textContent = ''; passwordAuthError.textContent = ''; userEmailDisplay.textContent = emailInput.value; submitBtn.textContent = submitAction; emailStep.classList.add('hidden'); passwordStep.classList.remove('hidden'); passwordInput.focus(); };
     nextBtn.addEventListener('click', () => goToPasswordStep('Sign In'));
     createAccountBtn.addEventListener('click', () => goToPasswordStep('Sign Up'));
@@ -776,14 +777,14 @@
     signOutBtn.addEventListener('click', () => { signOut(auth).then(() => { window.location.reload(); }).catch(error => showToast(error.message, 'error')); });
 
     // --- DATA HANDLING ---
-    function loadDataFromFirestore() { if (!currentUser) return; const docRef = doc(db, "users", currentUser.uid); unsubscribeFromFirestore = onSnapshot(docRef, (docSnap) => { if (docSnap.exists()) { appData = docSnap.data(); } else { initializeNewState(); saveDataToFirestore(); } viewOptions.currentJournalView = appData.activeJournalId || (Object.keys(appData.journals || {})[0]) || 'all'; updateUI(); }, (error) => showToast("Error connecting to cloud data.", 'error')); }
+    function loadDataFromFirestore() { if (!currentUser) return; const docRef = doc(db, "users", currentUser.uid); unsubscribeFromFirestore = onSnapshot(docRef, (docSnap) => { if (docSnap.exists()) { appData = docSnap.data(); } else { initializeNewState(); saveDataToFirestore(); } const journalIds = Object.keys(appData.journals || {}); let initialView = appData.activeJournalId && journalIds.includes(appData.activeJournalId) ? appData.activeJournalId : (journalIds[0] || 'all'); viewOptions.currentJournalView = initialView; lastActiveSingleJournalId = (initialView !== 'all') ? initialView : (journalIds[0] || null); updateUI(); }, (error) => showToast("Error connecting to cloud data.", 'error')); }
     function initializeNewState() { const firstJournalId = `journal_${Date.now()}`; appData = { journals: { [firstJournalId]: { name: "My First Journal", entries: [], lastModified: new Date().toISOString() } }, activeJournalId: firstJournalId }; }
     async function saveDataToFirestore(updateTimestamp = false) { if (!currentUser) return; if(updateTimestamp && appData.activeJournalId && appData.journals[appData.activeJournalId]) { appData.journals[appData.activeJournalId].lastModified = new Date().toISOString(); } clearTimeout(syncTimeout); syncStatus.innerHTML = `<svg class="animate-spin h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Saving...</span>`; try { await setDoc(doc(db, "users", currentUser.uid), appData); syncStatus.innerHTML = `<span class="text-green-600">✓ Synced</span>`; } catch (error) { syncStatus.innerHTML = `<span class="text-red-600">✗ Sync failed</span>`; showToast('Failed to save data to cloud.', 'error'); } finally { syncTimeout = setTimeout(() => syncStatus.innerHTML = '', 3000); } }
     
     // --- UI RENDERING & LOGIC ---
-    function updateUI() { if (!appData.journals || Object.keys(appData.journals).length === 0) { const isLoggedIn = !!currentUser; entriesTitle.textContent = isLoggedIn ? "No Journals Found" : "Please sign in"; tableBody.innerHTML = `<tr id="placeholderRow"><td colspan="7" class="text-center py-10 text-gray-500">${isLoggedIn ? 'Create a journal to get started.' : 'Sign in to manage your journals.'}</td></tr>`; [addEntryBtn, downloadBtn, downloadBackupBtn, searchInput, mergeJournalBtn].forEach(el => el.disabled = true); createJournalBtn.disabled = !isLoggedIn; importBackupBtn.disabled = !isLoggedIn; journalCardsContainer.innerHTML = `<p class="text-sm text-gray-500 text-center">No journals to display.</p>`; dashboardMainContent.classList.add('hidden'); dashboardMessage.classList.remove('hidden'); return; } dashboardMainContent.classList.remove('hidden'); dashboardMessage.classList.add('hidden'); [createJournalBtn, downloadBackupBtn, importBackupBtn, searchInput, mergeJournalBtn].forEach(el => el.disabled = false); mergeJournalBtn.disabled = Object.keys(appData.journals).length < 2; renderJournalCards(); setActiveJournalView(viewOptions.currentJournalView); }
+    function updateUI() { const hasJournals = appData.journals && Object.keys(appData.journals).length > 0; const isLoggedIn = !!currentUser; if (!hasJournals) { entriesTitle.textContent = isLoggedIn ? "No Journals Found" : "Please sign in"; tableBody.innerHTML = `<tr id="placeholderRow"><td colspan="7" class="text-center py-10 text-gray-500">${isLoggedIn ? 'Create a journal to get started.' : 'Sign in to manage your journals.'}</td></tr>`; [addEntryBtn, downloadBtn, downloadBackupBtn, searchInput, mergeJournalBtn].forEach(el => el.disabled = true); createJournalBtn.disabled = !isLoggedIn; importBackupBtn.disabled = !isLoggedIn; journalCardsContainer.innerHTML = `<p class="text-sm text-gray-500 text-center">No journals to display.</p>`; dashboardMainContent.classList.add('hidden'); dashboardMessage.classList.remove('hidden'); return; } dashboardMainContent.classList.remove('hidden'); dashboardMessage.classList.add('hidden'); [createJournalBtn, downloadBackupBtn, importBackupBtn, searchInput, mergeJournalBtn].forEach(el => el.disabled = false); mergeJournalBtn.disabled = Object.keys(appData.journals).length < 2; renderJournalCards(); setActiveJournalView(viewOptions.currentJournalView); }
     function renderJournalCards() { journalCardsContainer.innerHTML = ''; const journals = appData.journals || {}; const sortedIds = Object.keys(journals).sort((a,b) => journals[a].name.localeCompare(journals[b].name)); const allCard = document.createElement('div'); allCard.className = `journal-card p-4 border rounded-lg cursor-pointer transition-all ${viewOptions.currentJournalView === 'all' ? 'active' : 'border-gray-200 hover:bg-gray-50'}`; allCard.dataset.id = 'all'; const totalEntries = Object.values(journals).reduce((sum, j) => sum + (j.entries?.length || 0), 0); allCard.innerHTML = `<div class="flex justify-between items-center"> <div> <h3 class="font-bold text-gray-800">All Journals</h3> <p class="text-xs text-gray-500">${sortedIds.length} journals, ${totalEntries} entries</p> </div> ${!isMergeModeActive ? '<button class="select-journal-btn bg-gray-200 text-gray-800 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300" data-id="all">Select</button>' : ''} </div>`; if(isMergeModeActive) allCard.classList.add('disabled-card'); journalCardsContainer.appendChild(allCard); sortedIds.forEach(id => { const journal = journals[id]; const card = document.createElement('div'); card.className = `journal-card p-4 border rounded-lg cursor-pointer transition-all`; card.dataset.id = id; if (viewOptions.currentJournalView === id && !isMergeModeActive) { card.classList.add('active'); } else { card.classList.add('border-gray-200', 'hover:bg-gray-50'); } let cardActionsHTML = ''; if (isMergeModeActive) { let buttonHTML = ''; if (!mergeDestinationId) { buttonHTML = `<button class="select-merge-btn bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-blue-700" data-id="${id}">Select as Destination</button>`; } else { if (id === mergeDestinationId) { card.classList.add('merge-destination'); buttonHTML = `<span class="text-xs font-bold text-blue-800">DESTINATION</span>`; } else { if (canJournalsBeMerged(id, mergeDestinationId)) { buttonHTML = `<button class="select-merge-btn bg-lime-600 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-lime-700" data-id="${id}">Merge From Here</button>`; } else { card.classList.add('disabled-card'); buttonHTML = `<span class="text-xs font-bold text-red-700">Has different years</span>`; } } } cardActionsHTML = `<div class="flex items-center gap-2">${buttonHTML}</div>`; } else { cardActionsHTML = `<div class="flex items-center gap-2"> <button class="rename-journal-btn text-xs font-semibold text-blue-600 hover:text-blue-800" data-id="${id}">Rename</button> <button class="delete-journal-btn text-xs font-semibold text-red-600 hover:text-red-800" data-id="${id}">Delete</button> <button class="select-journal-btn bg-gray-200 text-gray-800 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300" data-id="${id}">Select</button> </div>`; } card.innerHTML = `<div class="flex justify-between items-center"> <div> <h3 class="font-bold text-gray-800 truncate">${journal.name}</h3> <p class="text-xs text-gray-500">${journal.entries?.length || 0} entries</p> </div> ${cardActionsHTML} </div>`; journalCardsContainer.appendChild(card); }); }
-    function setActiveJournalView(journalId) { viewOptions.currentJournalView = journalId; let title = "Dashboard"; if (journalId === 'all') { appData.activeJournalId = null; title = 'All Journals'; entryForm.classList.add('opacity-50', 'pointer-events-none'); tabButtons.add.disabled = true; addEntryBtn.disabled = true; } else { appData.activeJournalId = journalId; title = appData.journals[journalId]?.name || "Dashboard"; entryForm.classList.remove('opacity-50', 'pointer-events-none'); tabButtons.add.disabled = false; addEntryBtn.disabled = false; } const today = new Date(); dateDayInput.value = String(today.getDate()).padStart(2, '0'); dateMonthInput.value = String(today.getMonth() + 1).padStart(2, '0'); dateYearInput.value = today.getFullYear(); entriesTitle.textContent = `Entries for: ${title}`; resetAllFilters(); renderJournalCards(); }
+    function setActiveJournalView(journalId) { viewOptions.currentJournalView = journalId; let title = "Dashboard"; if (journalId === 'all') { appData.activeJournalId = null; title = 'All Journals'; entryForm.classList.add('opacity-50', 'pointer-events-none'); tabButtons.add.disabled = true; addEntryBtn.disabled = true; } else { lastActiveSingleJournalId = journalId; appData.activeJournalId = journalId; title = appData.journals[journalId]?.name || "Dashboard"; entryForm.classList.remove('opacity-50', 'pointer-events-none'); tabButtons.add.disabled = false; addEntryBtn.disabled = false; } const today = new Date(); dateDayInput.value = String(today.getDate()).padStart(2, '0'); dateMonthInput.value = String(today.getMonth() + 1).padStart(2, '0'); dateYearInput.value = today.getFullYear(); entriesTitle.textContent = `Entries for: ${title}`; resetAllFilters(); renderJournalCards(); }
     function getFilteredEntries() { const journalView = viewOptions.currentJournalView; let entriesToFilter = []; if (journalView === 'all') { entriesToFilter = Object.values(appData.journals || {}).flatMap(j => j.entries || []); } else { const activeJournal = appData.journals?.[journalView]; if (activeJournal && activeJournal.entries) { entriesToFilter = activeJournal.entries; } } const searchTerm = viewOptions.searchTerm.toLowerCase(); return entriesToFilter.filter(e => { if (!e || !e.date) return false; const entryDate = new Date(e.date); const startDate = viewOptions.startDate ? new Date(viewOptions.startDate) : null; const endDate = viewOptions.endDate ? new Date(viewOptions.endDate) : null; if (startDate && entryDate < startDate) return false; if (endDate && entryDate > endDate) return false; return (viewOptions.filterByType === 'all' || e.type === viewOptions.filterByType) && (viewOptions.filterByMethod === 'all' || e.method === viewOptions.filterByMethod) && (!searchTerm || e.narration.toLowerCase().includes(searchTerm)); }); }
     function renderRecentEntriesPreview() { const activeJournal = appData.journals[appData.activeJournalId]; if (viewOptions.currentJournalView === 'all' || !activeJournal || !activeJournal.entries || activeJournal.entries.length === 0) { recentEntriesBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">${viewOptions.currentJournalView === 'all' ? 'Select a journal to add entries.' : 'No recent entries to show.'}</td></tr>`; return; } const recentEntries = [...activeJournal.entries].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 30); recentEntriesBody.innerHTML = recentEntries.map(entry => { const typeClass = entry.type === 'Income' ? 'bg-lime-100 text-lime-800' : 'bg-red-100 text-red-800'; return `<tr class="new-row"> <td class="py-2 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td> <td class="py-2 px-4 break-words">${entry.narration}</td> <td class="py-2 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">${entry.type}</span></td> <td class="py-2 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td> <td class="py-2 px-4 text-center whitespace-nowrap"> <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors text-xs mr-2">Edit</button> <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors text-xs">Delete</button> </td> </tr>`; }).join(''); }
     function updateFilteredSummary(filteredEntries) { const income = filteredEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0); const expense = filteredEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0); const net = income - expense; filteredIncomeEl.textContent = `UGX ${income.toLocaleString()}`; filteredExpenseEl.textContent = `UGX ${expense.toLocaleString()}`; filteredNetEl.textContent = `UGX ${net.toLocaleString()}`; filteredNetEl.className = `text-lg font-bold ${net >= 0 ? 'text-blue-800' : 'text-red-600'}`; }
@@ -820,10 +821,10 @@
     function handleMergeSelection(selectedId) { if (!mergeDestinationId) { mergeDestinationId = selectedId; mergeStatusMessage.textContent = `Step 2: Select a journal to merge FROM (Source).`; renderJournalCards(); } else { const sourceId = selectedId; const destId = mergeDestinationId; const sourceName = appData.journals[sourceId].name; const destName = appData.journals[destId].name; const confirmationMessage = `Merge all entries from '${sourceName}' into '${destName}'? The '${sourceName}' journal will be deleted. This cannot be undone.`; showConfirmationModal(confirmationMessage, () => { const sourceEntries = appData.journals[sourceId].entries || []; appData.journals[destId].entries.push(...sourceEntries); appData.journals[destId].lastModified = new Date().toISOString(); delete appData.journals[sourceId]; saveDataToFirestore().then(() => { showToast("Journals merged successfully!", "success"); toggleMergeMode(); }); }); } }
     
     // --- TAB CONTROL & TOUR ---
-    const handleTabSwitch = (activeTabKey) => { if (tour && tour.isActive()) { tour.cancel(); } if (activeTabKey !== 'dashboard' && lastActiveJournalId !== null) { viewOptions.dashboardDateRange = 'month'; const journalToRestore = lastActiveJournalId; lastActiveJournalId = null; setActiveJournalView(journalToRestore); } if(isMergeModeActive) { toggleMergeMode(); } Object.values(tabContents).forEach(content => content.classList.add('hidden')); Object.values(tabButtons).forEach(button => { button.classList.remove('bg-orange-500', 'text-white'); button.classList.add('text-gray-500', 'hover:bg-gray-200'); }); tabContents[activeTabKey].classList.remove('hidden'); tabButtons[activeTabKey].classList.add('bg-orange-500', 'text-white'); tabButtons[activeTabKey].classList.remove('text-gray-500', 'hover:bg-gray-200'); };
+    const handleTabSwitch = (activeTabKey) => { if (tour && tour.isActive()) { tour.cancel(); } if (activeTabKey !== 'manage' && viewOptions.currentJournalView === 'all') { const journalToRestore = lastActiveSingleJournalId || (Object.keys(appData.journals || {})[0]); if (journalToRestore) { setActiveJournalView(journalToRestore); } } if(isMergeModeActive) { toggleMergeMode(); } Object.values(tabContents).forEach(content => content.classList.add('hidden')); Object.values(tabButtons).forEach(button => { button.classList.remove('bg-orange-500', 'text-white'); button.classList.add('text-gray-500', 'hover:bg-gray-200'); }); tabContents[activeTabKey].classList.remove('hidden'); tabButtons[activeTabKey].classList.add('bg-orange-500', 'text-white'); tabButtons[activeTabKey].classList.remove('text-gray-500', 'hover:bg-gray-200'); };
     Object.keys(tabButtons).forEach(key => { tabButtons[key].addEventListener('click', () => handleTabSwitch(key)); });
     Object.keys(chartTypeBtns).forEach(key => { chartTypeBtns[key].addEventListener('click', () => { viewOptions.chartDataType = key; renderDashboard(); }); });
-    kpiRangeBtns.forEach(btn => { btn.addEventListener('click', () => { viewOptions.dashboardDateRange = btn.dataset.range; if (btn.dataset.range === 'all') { if (viewOptions.currentJournalView !== 'all') { lastActiveJournalId = viewOptions.currentJournalView; } setActiveJournalView('all'); } else { if (lastActiveJournalId) { const journalToRestore = lastActiveJournalId; lastActiveJournalId = null; setActiveJournalView(journalToRestore); } else { renderDashboard(); } } }) });
+    kpiRangeBtns.forEach(btn => { btn.addEventListener('click', () => { viewOptions.dashboardDateRange = btn.dataset.range; if (btn.dataset.range === 'all') { if (viewOptions.currentJournalView !== 'all') { lastActiveSingleJournalId = viewOptions.currentJournalView; } setActiveJournalView('all'); } else { if (viewOptions.currentJournalView === 'all' && lastActiveSingleJournalId) { setActiveJournalView(lastActiveSingleJournalId); } else { renderDashboard(); } } }) });
     
     // --- EVENT LISTENERS ---
     userMenuButton.addEventListener('click', (e) => { e.stopPropagation(); userMenu.classList.toggle('hidden'); });
@@ -859,83 +860,25 @@
     importReplaceBtn.addEventListener('click', () => { if (!importedDataCache) return; importOptionsModal.classList.add('hidden'); showConfirmationModal( "This will permanently delete ALL your current cloud data and replace it with this backup. This cannot be undone.", () => { appData = importedDataCache; saveDataToFirestore().then(() => { showToast("Backup imported successfully!", "success"); importedDataCache = null; }); }); });
     downloadBackupBtn.addEventListener('click', () => { if (!currentUser) return; const dataStr = JSON.stringify(appData, null, 2); const blob = new Blob([dataStr], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `tck_backup_${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); });
     
-    // START: HELP TOUR LOGIC WITH ENHANCED UI
+    // START: HELP TOUR LOGIC
     function startTour(context) {
-        if (tour && tour.isActive()) {
-            tour.cancel();
-        }
-
-        tour = new Shepherd.Tour({
-            useModalOverlay: true,
-            defaultStepOptions: {
-                scrollTo: { behavior: 'smooth', block: 'center' },
-                cancelIcon: {
-                    enabled: true,
-                    label: 'Close tour'
-                },
-            }
-        });
-
-        const buttons = {
-            first: [{ action() { return this.cancel(); }, classes: 'shepherd-button-secondary', text: 'Exit' }, { action() { return this.next(); }, text: 'Next &rarr;' }],
-            middle: [{ action() { return this.back(); }, classes: 'shepherd-button-secondary', text: '&larr; Back' }, { action() { return this.next(); }, text: 'Next &rarr;' }],
-            last: [{ action() { return this.back(); }, classes: 'shepherd-button-secondary', text: '&larr; Back' }, { action() { return this.complete(); }, text: 'Finish' }]
-        };
-
-        const loginSteps = [
-            { id: 'login-1', title: 'Welcome!', text: 'Enter your email address to begin. If you don\'t have an account, you can create one in the next step.', attachTo: { element: '#email', on: 'bottom' }, buttons: buttons.first },
-            { id: 'login-2', title: 'Create or Sign In', text: 'Click "Create account" if you are a new user, or "Next" to sign in with your password.', attachTo: { element: '#next-btn', on: 'bottom' }, buttons: buttons.last }
-        ];
-
-        const dashboardSteps = [
-            { id: 'dash-1', title: 'Welcome to the Dashboard', text: 'This is your main overview. Let\'s take a quick look at the key features.', attachTo: { element: '#dashboard-title', on: 'bottom' } },
-            { id: 'dash-2', title: 'Key Performance Indicators (KPIs)', text: 'These cards show your total income, expenses, and net balance for the selected time period.', attachTo: { element: '#kpi-cards', on: 'bottom' } },
-            { id: 'dash-3', title: 'Date Range Filters', text: 'Use these buttons to change the time period for all the data and charts on this dashboard.', attachTo: { element: '#dashboard-range-selector', on: 'bottom' } },
-            { id: 'dash-4', title: 'Visual Charts', text: 'Your financial data is visualized here, showing trends in income, expenses, and your net balance over time.', attachTo: { element: '#charts-grid', on: 'top' } },
-            { id: 'dash-5', title: 'Navigation Tabs', text: 'Use these tabs to navigate to other sections of the app, like adding new entries or managing your data.', attachTo: { element: 'nav .tab-btn', on: 'bottom' } }
-        ];
-
-        const addEntrySteps = [
-            { id: 'add-1', title: 'Add a New Entry', text: 'This form is where you record all your income and expenses.', attachTo: { element: '#entryForm', on: 'right' } },
-            { id: 'add-2', title: 'Fill in the Details', text: 'Enter the date, type, source, a brief description (narration), and the amount for your transaction.', attachTo: { element: '#addEntryBtn', on: 'bottom' } },
-            { id: 'add-3', title: 'Recent Entries', text: 'Your most recent transactions for the selected journal will appear here for a quick review.', attachTo: { element: '#recent-entries-panel', on: 'left' } }
-        ];
-
-        const manageEntriesSteps = [
-            { id: 'manage-1', title: 'Manage All Entries', text: 'This is the main table for viewing, searching, and filtering all your records.', attachTo: { element: '#entriesTitle', on: 'bottom' } },
-            { id: 'manage-2', title: 'Filter and Sort', text: 'Use these powerful controls to find specific entries. You can filter by date, type, method, or search by narration.', attachTo: { element: '#manage-filters', on: 'bottom' } },
-            { id: 'manage-3', title: 'Download to Excel', text: 'Click here to download the currently filtered view as a formatted Excel file.', attachTo: { element: '#downloadBtn', on: 'left' } }
-        ];
-        
-        const dataManagementSteps = [
-            { id: 'data-1', title: 'Manage Journals', text: 'Here you can create new journals, merge existing ones, rename, or delete them.', attachTo: { element: '#createJournalBtn', on: 'bottom' } },
-            { id: 'data-2', title: 'Merging Journals', text: 'The merge tool allows you to combine two journals. Note: You can only merge journals if their entries are from the same year.', attachTo: { element: '#mergeJournalBtn', on: 'bottom' } },
-            { id: 'data-3', title: 'Data Backup', text: 'It\'s a good practice to download a JSON backup of your data periodically. You can use this file to restore your data later.', attachTo: { element: '#downloadBackupBtn', on: 'top' } }
-        ];
-
-        [dashboardSteps, addEntrySteps, manageEntriesSteps, dataManagementSteps].forEach(stepList => {
-            stepList.forEach((step, i) => {
-                step.buttons = i === 0 ? buttons.first : i === stepList.length - 1 ? buttons.last : buttons.middle;
-            });
-        });
-
-        if (context === 'login') {
-            tour.addSteps(loginSteps);
-        } else {
-            if (!tabContents.dashboard.classList.contains('hidden')) { tour.addSteps(dashboardSteps); }
-            else if (!tabContents.add.classList.contains('hidden')) { tour.addSteps(addEntrySteps); }
-            else if (!tabContents.manage.classList.contains('hidden')) { tour.addSteps(manageEntriesSteps); }
-            else if (!tabContents.data.classList.contains('hidden')) { tour.addSteps(dataManagementSteps); }
-        }
-        
+        if (tour && tour.isActive()) { tour.cancel(); }
+        tour = new Shepherd.Tour({ useModalOverlay: true, defaultStepOptions: { scrollTo: { behavior: 'smooth', block: 'center' }, cancelIcon: { enabled: true, label: 'Close tour' }, } });
+        const buttons = { first: [{ action() { return this.cancel(); }, classes: 'shepherd-button-secondary', text: 'Exit' }, { action() { return this.next(); }, text: 'Next &rarr;' }], middle: [{ action() { return this.back(); }, classes: 'shepherd-button-secondary', text: '&larr; Back' }, { action() { return this.next(); }, text: 'Next &rarr;' }], last: [{ action() { return this.back(); }, classes: 'shepherd-button-secondary', text: '&larr; Back' }, { action() { return this.complete(); }, text: 'Finish' }] };
+        const loginSteps = [ { id: 'login-1', title: 'Welcome!', text: 'Enter your email address to begin. If you don\'t have an account, you can create one in the next step.', attachTo: { element: '#email', on: 'bottom' } }, { id: 'login-2', title: 'Create or Sign In', text: 'Click "Create account" if you are a new user, or "Next" to sign in with your password.', attachTo: { element: '#next-btn', on: 'bottom' } } ];
+        const dashboardSteps = [ { id: 'dash-1', title: 'Welcome to the Dashboard', text: 'This is your main overview. Let\'s take a quick look at the key features.', attachTo: { element: '#dashboard-title', on: 'bottom' } }, { id: 'dash-2', title: 'Key Performance Indicators (KPIs)', text: 'These cards show your total income, expenses, and net balance for the selected time period.', attachTo: { element: '#kpi-cards', on: 'bottom' } }, { id: 'dash-3', title: 'Date Range Filters', text: 'Use these buttons to change the time period for all the data and charts on this dashboard.', attachTo: { element: '#dashboard-range-selector', on: 'bottom' } }, { id: 'dash-4', title: 'Visual Charts', text: 'Your financial data is visualized here, showing trends in income, expenses, and your net balance over time.', attachTo: { element: '#charts-grid', on: 'top' } }, { id: 'dash-5', title: 'Navigation Tabs', text: 'Use these tabs to navigate to other sections of the app, like adding new entries or managing your data.', attachTo: { element: 'nav .tab-btn', on: 'bottom' } } ];
+        const addEntrySteps = [ { id: 'add-1', title: 'Add a New Entry', text: 'This form is where you record all your income and expenses.', attachTo: { element: '#entryForm', on: 'right' } }, { id: 'add-2', title: 'Fill in the Details', text: 'Enter the date, type, source, a brief description (narration), and the amount for your transaction.', attachTo: { element: '#addEntryBtn', on: 'bottom' } }, { id: 'add-3', title: 'Recent Entries', text: 'Your most recent transactions for the selected journal will appear here for a quick review.', attachTo: { element: '#recent-entries-panel', on: 'left' } } ];
+        const manageEntriesSteps = [ { id: 'manage-1', title: 'Manage All Entries', text: 'This is the main table for viewing, searching, and filtering all your records.', attachTo: { element: '#entriesTitle', on: 'bottom' } }, { id: 'manage-2', title: 'Filter and Sort', text: 'Use these powerful controls to find specific entries. You can filter by date, type, method, or search by narration.', attachTo: { element: '#manage-filters', on: 'bottom' } }, { id: 'manage-3', title: 'Download to Excel', text: 'Click here to download the currently filtered view as a formatted Excel file.', attachTo: { element: '#downloadBtn', on: 'left' } } ];
+        const dataManagementSteps = [ { id: 'data-1', title: 'Manage Journals', text: 'Here you can create new journals, merge existing ones, rename, or delete them.', attachTo: { element: '#createJournalBtn', on: 'bottom' } }, { id: 'data-2', title: 'Merging Journals', text: 'The merge tool allows you to combine two journals. Note: You can only merge journals if their entries are from the same year.', attachTo: { element: '#mergeJournalBtn', on: 'bottom' } }, { id: 'data-3', title: 'Data Backup', text: 'It\'s a good practice to download a JSON backup of your data periodically. You can use this file to restore your data later.', attachTo: { element: '#downloadBackupBtn', on: 'top' } } ];
+        [loginSteps, dashboardSteps, addEntrySteps, manageEntriesSteps, dataManagementSteps].forEach(stepList => { stepList.forEach((step, i) => { step.buttons = i === 0 ? buttons.first : i === stepList.length - 1 ? buttons.last : buttons.middle; }); });
+        if (context === 'login') { tour.addSteps(loginSteps); } else if (context === 'app') { if (!tabContents.dashboard.classList.contains('hidden')) { tour.addSteps(dashboardSteps); } else if (!tabContents.add.classList.contains('hidden')) { tour.addSteps(addEntrySteps); } else if (!tabContents.manage.classList.contains('hidden')) { tour.addSteps(manageEntriesSteps); } else if (!tabContents.data.classList.contains('hidden')) { tour.addSteps(dataManagementSteps); } }
         tour.start();
     }
-
     loginHelpBtn.addEventListener('click', () => startTour('login'));
     appHelpBtn.addEventListener('click', () => startTour('app'));
     // END: HELP TOUR LOGIC
-    
-    // START: FIX FOR DOWNLOAD EXCEL BUTTON
+
+    // START: EXCEL DOWNLOAD SCRIPT (FIXED)
     downloadBtn.addEventListener('click', async () => {
         const entriesToDownload = getFilteredEntries();
         let journalName = "Journal";
@@ -944,20 +887,16 @@
         } else {
             journalName = appData.journals[viewOptions.currentJournalView]?.name || "Journal";
         }
-        
         if (entriesToDownload.length === 0) {
             showToast("No entries to download in the current view.", "info");
             return;
         }
-
         downloadBtn.disabled = true;
         showToast('Preparing your workbook...', 'info');
-
         try {
             const pyodide = await loadPy();
             pyodide.globals.set('entries_json', JSON.stringify(entriesToDownload));
             pyodide.globals.set('journal_name_js', journalName);
-            
             const base64Data = await pyodide.runPythonAsync(`
 import json, io, base64
 from datetime import datetime
@@ -970,12 +909,14 @@ header_font = Font(name='Calibri', size=11, bold=True, color='FFFFFFFF')
 subheader_font = Font(name='Calibri', size=11, bold=True)
 vertical_month_font = Font(name='Calibri', size=28, bold=True)
 data_font = Font(name='Calibri', size=11)
+year_font = Font(name='Calibri', size=18, bold=True, color='FFFFFFFF')
 center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
 right_align = Alignment(horizontal='right', vertical='center', wrap_text=True)
 vertical_align = Alignment(text_rotation=90, vertical='center', horizontal='center')
 blue_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
 orange_fill = PatternFill(start_color='ED7D31', end_color='ED7D31', fill_type='solid')
 black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')
+gray_fill = PatternFill(start_color='808080', end_color='808080', fill_type='solid')
 thin_side = Side(style='thin', color='000000')
 thin_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
 currency_format = '"UGX"* #,##0'
@@ -984,89 +925,77 @@ MIN_ROWS_PER_MONTH = 35
 def create_month_table(worksheet, start_row, month_name, income_entries, expense_entries):
     worksheet.merge_cells(start_row=start_row, start_column=3, end_row=start_row, end_column=5); cell = worksheet.cell(start_row, 3); cell.value = 'INCOME'; cell.fill = blue_fill; cell.font = header_font; cell.alignment = center_align
     worksheet.merge_cells(start_row=start_row, start_column=7, end_row=start_row, end_column=9); cell = worksheet.cell(start_row, 7); cell.value = 'EXPENSES'; cell.fill = orange_fill; cell.font = header_font; cell.alignment = center_align
-    
-    income_headers = {'C': 'Date', 'D': 'Amount', 'E': 'Narration'}
-    expense_headers = {'G': 'Date', 'H': 'Amount', 'I': 'Narration'}
-
+    income_headers = {'C': 'Date', 'D': 'Amount', 'E': 'Narration'}; expense_headers = {'G': 'Date', 'H': 'Amount', 'I': 'Narration'}
     for col_char, text in income_headers.items():
         cell = worksheet[f'{col_char}{start_row+1}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
     for col_char, text in expense_headers.items():
         cell = worksheet[f'{col_char}{start_row+1}']; cell.value = text; cell.font = subheader_font; cell.alignment = center_align
-
     current_income_row = start_row + 2
     for date, group in groupby(income_entries, key=lambda x: x.get('date')):
-        group_list = list(group)
-        num_entries = len(group_list)
-        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        group_list = list(group); num_entries = len(group_list); date_obj = datetime.strptime(date, '%Y-%m-%d')
         date_cell = worksheet.cell(row=current_income_row, column=3, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align
         if num_entries > 1: worksheet.merge_cells(start_row=current_income_row, start_column=3, end_row=current_income_row + num_entries - 1, end_column=3)
         for i, entry in enumerate(group_list):
             row_idx = current_income_row + i
             worksheet.cell(row=row_idx, column=4, value=entry.get('amount')).number_format = currency_format; worksheet.cell(row=row_idx, column=4).font = data_font
-            narration_cell = worksheet.cell(row=row_idx, column=5, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align
+            worksheet.cell(row=row_idx, column=5, value=entry.get('narration')).font = data_font; worksheet.cell(row=row_idx, column=5).alignment = right_align
         current_income_row += num_entries
-
     current_expense_row = start_row + 2
     for date, group in groupby(expense_entries, key=lambda x: x.get('date')):
-        group_list = list(group)
-        num_entries = len(group_list)
-        date_obj = datetime.strptime(date, '%Y-%m-%d')
+        group_list = list(group); num_entries = len(group_list); date_obj = datetime.strptime(date, '%Y-%m-%d')
         date_cell = worksheet.cell(row=current_expense_row, column=7, value=date_obj); date_cell.number_format = 'DD/MM/YYYY'; date_cell.font = data_font; date_cell.alignment = center_align
         if num_entries > 1: worksheet.merge_cells(start_row=current_expense_row, start_column=7, end_row=current_expense_row + num_entries - 1, end_column=7)
         for i, entry in enumerate(group_list):
             row_idx = current_expense_row + i
             worksheet.cell(row=row_idx, column=8, value=entry.get('amount')).number_format = currency_format; worksheet.cell(row=row_idx, column=8).font = data_font
-            narration_cell = worksheet.cell(row=row_idx, column=9, value=entry.get('narration')); narration_cell.font = data_font; narration_cell.alignment = right_align
+            worksheet.cell(row=row_idx, column=9, value=entry.get('narration')).font = data_font; worksheet.cell(row=row_idx, column=9).alignment = right_align
         current_expense_row += num_entries
-        
     table_end_row = max(current_income_row, current_expense_row, start_row + MIN_ROWS_PER_MONTH)
     for r in range(start_row, table_end_row):
         worksheet[f'F{r}'].fill = black_fill
-    for r in range(start_row, table_end_row):
-      for c_ord in list(range(ord('C'), ord('F'))) + list(range(ord('G'), ord('J'))):
+        for c_ord in list(range(ord('C'), ord('F'))) + list(range(ord('G'), ord('J'))):
             worksheet.cell(row=r, column=c_ord - ord('A') + 1).border = thin_border
-            
     data_start_row = start_row + 2
     if data_start_row < table_end_row:
         worksheet.merge_cells(start_row=data_start_row, start_column=1, end_row=table_end_row - 1, end_column=1)
         cell = worksheet.cell(row=data_start_row, column=1); cell.value = month_name.upper(); cell.font = vertical_month_font; cell.alignment = vertical_align
-        
     return table_end_row
 
 wb = Workbook()
-ws_mtn = wb.create_sheet("MTN")
-ws_airtel = wb.create_sheet("Airtel")
-ws_bank = wb.create_sheet("Bank")
-if 'Sheet' in wb.sheetnames:
-    wb.remove(wb['Sheet'])
-
+ws_mtn = wb.create_sheet("MTN"); ws_airtel = wb.create_sheet("Airtel"); ws_bank = wb.create_sheet("Bank")
+if 'Sheet' in wb.sheetnames: wb.remove(wb['Sheet'])
 entries = sorted([e for e in json.loads(entries_json) if e.get('date')], key=lambda x: x['date'])
-mtn_entries = [e for e in entries if e.get('method') == 'MTN']
-airtel_entries = [e for e in entries if e.get('method') == 'Airtel']
-bank_entries = [e for e in entries if e.get('method') == 'Bank']
-
-data_by_method = { "MTN": (ws_mtn, mtn_entries), "Airtel": (ws_airtel, airtel_entries), "Bank": (ws_bank, bank_entries) }
+data_by_method = {
+    "MTN": (ws_mtn, [e for e in entries if e.get('method') == 'MTN']),
+    "Airtel": (ws_airtel, [e for e in entries if e.get('method') == 'Airtel']),
+    "Bank": (ws_bank, [e for e in entries if e.get('method') == 'Bank'])
+}
 column_widths = {'A': 5, 'B': 1, 'C': 12, 'D': 15, 'E': 30, 'F': 1.5, 'G': 12, 'H': 15, 'I': 30}
-
 for method, (worksheet, method_entries) in data_by_method.items():
     for col, width in column_widths.items():
         worksheet.column_dimensions[col].width = width
-        
     monthly_data = defaultdict(lambda: {'income': [], 'expense': []})
     for entry in method_entries:
         month_key = datetime.strptime(entry['date'], '%Y-%m-%d').strftime('%Y-%m')
         if entry['type'] == 'Income': monthly_data[month_key]['income'].append(entry)
         else: monthly_data[month_key]['expense'].append(entry)
-    
     current_row = 2
+    current_year = None
     if not monthly_data:
         create_month_table(worksheet, current_row, "No Data", [], [])
     else:
         for month_key in sorted(monthly_data.keys()):
+            year_of_month = month_key.split('-')[0]
+            if year_of_month != current_year:
+                if current_year is not None: current_row += 1
+                current_year = year_of_month
+                worksheet.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=9)
+                year_cell = worksheet.cell(row=current_row, column=1)
+                year_cell.value = int(year_of_month); year_cell.font = year_font; year_cell.fill = gray_fill; year_cell.alignment = center_align
+                current_row += 2
             month_name = datetime.strptime(month_key, '%Y-%m').strftime('%B')
             data = monthly_data[month_key]
             current_row = create_month_table(worksheet, current_row, month_name, data['income'], data['expense']) + 3
-
 bio = io.BytesIO(); wb.save(bio)
 base64.b64encode(bio.getvalue()).decode('utf-8')
 `);
