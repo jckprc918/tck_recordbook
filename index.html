@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +8,16 @@
   <link rel="icon" type="image/png" href="logo.png">
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- START: FIX - Added Tailwind dark mode configuration -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {}
+      }
+    }
+  </script>
+  <!-- END: FIX -->
   <!-- Pyodide for Excel Generation -->
   <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
   <!-- Chart.js for Graphics -->
@@ -35,6 +45,9 @@
         background-size: 1.5em 1.5em;
         padding-right: 2.5rem;
         -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    }
+    .dark select {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     }
     .hidden { display: none; }
     @keyframes toast-in {
@@ -70,10 +83,16 @@
         box-shadow: 0 0 0 2px #2563eb;
         background-color: #eff6ff; /* Blue-50 */
     }
+    .dark .journal-card.merge-destination {
+        background-color: #1e3a8a; /* Blue-800 */
+    }
     .journal-card.disabled-card {
         opacity: 0.5;
         cursor: not-allowed;
         background-color: #f3f4f6; /* Gray-100 */
+    }
+    .dark .journal-card.disabled-card {
+        background-color: #374151; /* Gray-700 */
     }
 
     /* START: HELP BUTTON STYLES */
@@ -114,12 +133,19 @@
         font-family: 'Inter', sans-serif;
         z-index: 9999;
     }
+    .dark .shepherd-element {
+        background: #1f2937; /* Gray-800 */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+    }
     .shepherd-arrow, .shepherd-arrow::before {
         position: absolute;
         width: 1rem;
         height: 1rem;
         background: #fff;
         transform: rotate(45deg);
+    }
+    .dark .shepherd-arrow, .dark .shepherd-arrow::before {
+        background: #1f2937;
     }
     .shepherd-element[data-popper-placement^="top"] > .shepherd-arrow { bottom: -0.5rem; }
     .shepherd-element[data-popper-placement^="bottom"] > .shepherd-arrow { top: -0.5rem; }
@@ -132,11 +158,13 @@
         padding: 0.75rem 1rem;
         border-bottom: 1px solid #e5e7eb;
     }
+    .dark .shepherd-header { border-bottom: 1px solid #374151; /* Gray-700 */ }
     .shepherd-title {
         color: #111827;
         font-size: 1rem;
         font-weight: 600;
     }
+    .dark .shepherd-title { color: #f3f4f6; /* Gray-100 */ }
     .shepherd-cancel-icon {
         background: transparent;
         border: 0;
@@ -147,6 +175,8 @@
         font-weight: bold;
         line-height: 1;
     }
+    .dark .shepherd-cancel-icon { color: #9ca3af; /* Gray-400 */ }
+    .dark .shepherd-cancel-icon:hover { color: #f3f4f6; }
     .shepherd-cancel-icon:hover { color: #111827; }
     .shepherd-text {
         padding: 1rem;
@@ -154,6 +184,7 @@
         line-height: 1.5;
         color: #4b5563;
     }
+    .dark .shepherd-text { color: #d1d5db; /* Gray-300 */ }
     .shepherd-footer {
         display: flex;
         justify-content: space-between;
@@ -187,6 +218,11 @@
         color: #374151;
     }
     .shepherd-button.shepherd-button-secondary:hover { background-color: #d1d5db; }
+    .dark .shepherd-button.shepherd-button-secondary {
+        background-color: #374151; /* Gray-700 */
+        color: #f3f4f6; /* Gray-100 */
+    }
+    .dark .shepherd-button.shepherd-button-secondary:hover { background-color: #4b5563; /* Gray-600 */ }
     .shepherd-button svg { width: 1rem; height: 1rem; }
     /* END: SHEPHERD TOUR STYLES */
 
@@ -197,22 +233,22 @@
     }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen font-sans">
 
   <!-- Login View -->
   <div id="login-view" class="w-full min-h-screen flex items-center justify-center p-4">
-      <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full max-w-md">
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
           <form id="loginForm">
               <div id="email-step" class="p-8 md:p-10">
                   <div class="text-center mb-8">
                       <img src="logo.png" alt="TCK Logo" class="mx-auto h-20 mb-4">
-                      <h1 class="text-2xl font-bold text-gray-800">Sign in</h1>
-                      <p class="text-gray-600 mt-2">to continue to TCK Record Book</p>
+                      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Sign in</h1>
+                      <p class="text-gray-600 dark:text-gray-400 mt-2">to continue to TCK Record Book</p>
                   </div>
                   <div id="email-auth-error" class="text-red-500 text-sm text-center mb-4"></div>
                   <div>
                       <label for="email" class="sr-only">Email</label>
-                      <input type="email" id="email" placeholder="Email" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3" />
+                      <input type="email" id="email" placeholder="Email" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
                   </div>
                   <div class="flex items-center justify-end mt-8">
                       <button type="button" id="next-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-md shadow-sm transition-all duration-200">Next</button>
@@ -221,9 +257,9 @@
               <div id="password-step" class="hidden p-8 md:p-10">
                   <div class="text-center mb-8">
                       <img src="logo.png" alt="TCK Logo" class="mx-auto h-20 mb-4">
-                      <h1 class="text-2xl font-bold text-gray-800">Welcome</h1>
+                      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Welcome</h1>
                       <div class="mt-3">
-                          <button type="button" id="change-email-btn" class="inline-flex items-center gap-2 border border-gray-300 rounded-full py-1 px-3 text-sm text-gray-700 hover:bg-gray-100">
+                          <button type="button" id="change-email-btn" class="inline-flex items-center gap-2 border border-gray-300 rounded-full py-1 px-3 text-sm text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">
                               <span id="user-email-display"></span>
                               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                           </button>
@@ -232,7 +268,7 @@
                   <div id="password-auth-error" class="text-red-500 text-sm text-center mb-4"></div>
                   <div>
                       <label for="password" class="sr-only">Password</label>
-                      <input type="password" id="password" placeholder="Enter your password" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3" />
+                      <input type="password" id="password" placeholder="Enter your password" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
                   </div>
                   <div class="flex items-center justify-end mt-8">
                       <button type="submit" id="submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-md shadow-sm transition-all duration-200">Sign In</button>
@@ -249,38 +285,43 @@
 
   <!-- Main App View -->
   <div id="app-view" class="w-full hidden">
-    <header class="sticky top-0 z-50 bg-white shadow-md">
+    <header class="sticky top-0 z-50 bg-white shadow-md dark:bg-gray-800/95 dark:backdrop-blur-sm dark:border-b dark:border-gray-700">
         <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             <div class="flex items-center gap-3">
                 <img src="logo.png" alt="TCK Logo" class="h-12 w-auto">
-                <h1 class="text-xl font-bold text-gray-800">TCK Record Book</h1>
+                <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">TCK Record Book</h1>
             </div>
             <nav class="w-full md:w-auto md:flex-grow flex justify-center order-3 md:order-2">
                 <div class="flex space-x-2" aria-label="Tabs">
                     <button id="dashboard-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm bg-orange-500 text-white">Dashboard</button>
-                    <button id="add-entry-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200">Add Entry</button>
-                    <button id="management-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200">Manage Entries</button>
+                    <button id="add-entry-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">Add Entry</button>
+                    <button id="management-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">Manage Entries</button>
                     <!-- START: CHANGE #4 - Renamed tab -->
-                    <button id="data-management-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200">Journals</button>
+                    <button id="data-management-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">Journals</button>
                     <!-- END: CHANGE #4 -->
                 </div>
             </nav>
             <div class="flex items-center gap-4 order-2 md:order-3">
-                <span id="syncStatus" class="text-sm text-gray-500 flex items-center gap-1"></span>
+                <button id="theme-toggle-btn" type="button" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 dark:focus:ring-offset-gray-800" title="Toggle theme">
+                    <svg id="theme-icon-light" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                    <svg id="theme-icon-dark" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                    <svg id="theme-icon-system" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                </button>
+                <span id="syncStatus" class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1"></span>
                 <div class="relative">
-                    <button id="user-menu-button" type="button" class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-600 p-2 rounded-lg hover:bg-orange-50">
+                    <button id="user-menu-button" type="button" class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-600 p-2 rounded-lg hover:bg-orange-50 dark:text-gray-300 dark:hover:bg-gray-700">
                         <span id="userEmail" class="hidden md:block"></span>
                         <span id="userRoleBadge" class="hidden text-xs font-bold uppercase px-2 py-1 rounded-full"></span>
                         <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </button>
-                    <div id="user-menu" class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" role="menu">
+                    <div id="user-menu" class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-600" role="menu">
                         <div class="py-1" role="none">
-                            <div class="px-4 py-2 text-sm text-gray-700">
+                            <div class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
                                 <p class="font-medium">Signed in as</p>
                                 <p id="user-email-dropdown" class="truncate"></p>
                             </div>
-                            <button id="adminMenuBtn" class="hidden w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">Admin Panel</button>
-                            <button id="signOutBtn" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100" role="menuitem">Sign Out</button>
+                            <button id="adminMenuBtn" class="hidden w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" role="menuitem">Admin Panel</button>
+                            <button id="signOutBtn" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">Sign Out</button>
                         </div>
                     </div>
                 </div>
@@ -292,49 +333,49 @@
         <div id="tab-content-wrapper" class="max-w-7xl w-full mx-auto">
             <div id="dashboard-content-container">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-4">
-                    <h2 id="dashboard-title" class="text-xl font-bold text-gray-800">Dashboard</h2>
+                    <h2 id="dashboard-title" class="text-xl font-bold text-gray-800 dark:text-gray-100">Dashboard</h2>
                     <div id="dashboard-range-selector" class="inline-flex rounded-md shadow-sm" role="group">
-                         <button type="button" data-range="week" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">This Week</button>
-                         <button type="button" data-range="month" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500 active">This Month</button>
-                         <button type="button" data-range="year" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-r border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">This Year</button>
-                         <button type="button" data-range="all" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">All Time</button>
+                         <button type="button" data-range="week" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">This Week</button>
+                         <button type="button" data-range="month" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500 active dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">This Month</button>
+                         <button type="button" data-range="year" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border-t border-b border-r border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">This Year</button>
+                         <button type="button" data-range="all" class="kpi-range-btn px-4 py-2 text-sm font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">All Time</button>
                     </div>
                 </div>
-                <div id="dashboard-message" class="text-center text-gray-500 mt-4 hidden">Select a journal to see the dashboard.</div>
+                <div id="dashboard-message" class="text-center text-gray-500 dark:text-gray-400 mt-4 hidden">Select a journal to see the dashboard.</div>
                 <div id="dashboard-main-content">
                     <div id="kpi-cards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div class="bg-white rounded-xl shadow p-5">
-                            <p class="text-sm font-medium text-gray-500">Total Income</p>
-                            <p id="kpi-income" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
-                            <p id="kpi-income-comp" class="text-xs text-gray-500 mt-1"> </p>
+                        <div class="bg-white rounded-xl shadow p-5 dark:bg-gray-800">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Income</p>
+                            <p id="kpi-income" class="text-3xl font-bold text-gray-800 mt-1 dark:text-gray-100">UGX 0</p>
+                            <p id="kpi-income-comp" class="text-xs text-gray-500 dark:text-gray-400 mt-1"> </p>
                         </div>
-                        <div class="bg-white rounded-xl shadow p-5">
-                            <p class="text-sm font-medium text-gray-500">Total Expense</p>
-                            <p id="kpi-expense" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
-                            <p id="kpi-expense-comp" class="text-xs text-gray-500 mt-1"> </p>
+                        <div class="bg-white rounded-xl shadow p-5 dark:bg-gray-800">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Expense</p>
+                            <p id="kpi-expense" class="text-3xl font-bold text-gray-800 mt-1 dark:text-gray-100">UGX 0</p>
+                            <p id="kpi-expense-comp" class="text-xs text-gray-500 dark:text-gray-400 mt-1"> </p>
                         </div>
-                        <div class="bg-white rounded-xl shadow p-5">
-                            <p class="text-sm font-medium text-gray-500">Net Balance</p>
-                            <p id="kpi-net" class="text-3xl font-bold text-gray-800 mt-1">UGX 0</p>
-                            <p id="kpi-net-comp" class="text-xs text-gray-500 mt-1"> </p>
+                        <div class="bg-white rounded-xl shadow p-5 dark:bg-gray-800">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Net Balance</p>
+                            <p id="kpi-net" class="text-3xl font-bold text-gray-800 mt-1 dark:text-gray-100">UGX 0</p>
+                            <p id="kpi-net-comp" class="text-xs text-gray-500 dark:text-gray-400 mt-1"> </p>
                         </div>
                     </div>
                     <div id="charts-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white rounded-xl shadow p-5 h-80"><canvas id="incomeBarChart"></canvas></div>
-                        <div class="bg-white rounded-xl shadow p-5 h-80"><canvas id="expenseBarChart"></canvas></div>
-                        <div class="bg-white rounded-xl shadow p-5 h-80">
+                        <div class="bg-white rounded-xl shadow p-5 h-80 dark:bg-gray-800"><canvas id="incomeBarChart"></canvas></div>
+                        <div class="bg-white rounded-xl shadow p-5 h-80 dark:bg-gray-800"><canvas id="expenseBarChart"></canvas></div>
+                        <div class="bg-white rounded-xl shadow p-5 h-80 dark:bg-gray-800">
                              <div class="text-center mb-2">
-                                <h3 id="chart-title" class="text-md font-semibold text-gray-700">Breakdown by Source</h3>
+                                <h3 id="chart-title" class="text-md font-semibold text-gray-700 dark:text-gray-300">Breakdown by Source</h3>
                                 <div class="flex justify-center items-center gap-4 mt-1">
                                     <div class="inline-flex rounded-md shadow-sm" role="group">
-                                        <button type="button" id="chart-type-expense" class="chart-btn px-3 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">Expenses</button>
-                                        <button type="button" id="chart-type-income" class="chart-btn px-3 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500">Incomes</button>
+                                        <button type="button" id="chart-type-expense" class="chart-btn px-3 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">Expenses</button>
+                                        <button type="button" id="chart-type-income" class="chart-btn px-3 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-r-md hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">Incomes</button>
                                     </div>
                                 </div>
                             </div>
                             <div class="relative h-56 w-full"><canvas id="donutChart"></canvas></div>
                         </div>
-                        <div class="bg-white rounded-xl shadow p-5 h-80"><canvas id="netBalanceAreaChart"></canvas></div>
+                        <div class="bg-white rounded-xl shadow p-5 h-80 dark:bg-gray-800"><canvas id="netBalanceAreaChart"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -342,45 +383,45 @@
             <div id="add-entry-content-container" class="hidden">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="lg:col-span-1">
-                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
-                          <h2 class="text-xl font-bold text-gray-800 mb-4">Add New Entry</h2>
+                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-gray-800">
+                          <h2 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Add New Entry</h2>
                           <form id="entryForm" class="grid grid-cols-1 gap-4">
                             <div>
-                              <label for="date-day" class="block text-sm font-medium text-gray-700">Date</label>
+                              <label for="date-day" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
                               <div class="mt-1 flex items-center gap-2 relative">
-                                <input type="number" id="date-day" placeholder="DD" min="1" max="31" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                                <input type="number" id="date-day" placeholder="DD" min="1" max="31" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                                 <span class="text-gray-400">/</span>
-                                <input type="number" id="date-month" placeholder="MM" min="1" max="12" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                                <input type="number" id="date-month" placeholder="MM" min="1" max="12" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                                 <span class="text-gray-400">/</span>
-                                <input type="number" id="date-year" placeholder="YYYY" min="1900" max="2100" required class="w-2/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
-                                <button type="button" id="date-picker-btn" class="p-2 rounded-lg hover:bg-gray-100">
-                                  <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <input type="number" id="date-year" placeholder="YYYY" min="1900" max="2100" required class="w-2/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                                <button type="button" id="date-picker-btn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                                  <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 </button>
                                 <input type="date" id="native-date-picker" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer" style="z-index: -1;" />
                               </div>
                             </div>
                             <div>
-                              <label for="type" class="block text-sm font-medium text-gray-700">Entry Type</label>
-                              <select id="type" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
+                              <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Entry Type</label>
+                              <select id="type" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                 <option value="Income">Income</option>
                                 <option value="Expense" selected>Expense</option>
                               </select>
                             </div>
                             <div>
-                              <label for="method" class="block text-sm font-medium text-gray-700">Source / Method</label>
-                              <select id="method" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
+                              <label for="method" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source / Method</label>
+                              <select id="method" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                 <option value="MTN">MTN</option>
                                 <option value="Airtel">Airtel</option>
                                 <option value="Bank" selected>Bank</option>
                               </select>
                             </div>
                             <div>
-                              <label for="narration" class="block text-sm font-medium text-gray-700">Narration / Category</label>
-                              <input type="text" id="narration" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                              <label for="narration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Category</label>
+                              <input type="text" id="narration" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                             </div>
                             <div>
-                              <label for="amount" class="block text-sm font-medium text-gray-700">Amount (UGX)</label>
-                              <input type="number" id="amount" min="0" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                              <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (UGX)</label>
+                              <input type="number" id="amount" min="0" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                             </div>
                             <button type="submit" id="addEntryBtn" class="mt-3 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50">
                               Add Entry
@@ -389,12 +430,12 @@
                         </div>
                     </div>
                     <div id="recent-entries-panel" class="lg:col-span-2">
-                         <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
-                            <h2 class="text-xl font-bold text-gray-800 mb-4">Recent Entries</h2>
+                         <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-gray-800">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Recent Entries</h2>
                             <div class="overflow-y-auto" style="max-height: 28rem;">
                                 <table id="recentEntriesTable" class="min-w-full text-sm">
-                                    <thead class="bg-gray-100 sticky top-0">
-                                        <tr class="text-left text-gray-600 uppercase tracking-wider">
+                                    <thead class="bg-gray-100 sticky top-0 dark:bg-gray-700">
+                                        <tr class="text-left text-gray-600 uppercase tracking-wider dark:text-gray-400">
                                             <th class="py-2 px-4">Date</th>
                                             <th class="py-2 px-4">Narration</th>
                                             <th class="py-2 px-4">Type</th>
@@ -402,7 +443,7 @@
                                             <th class="py-2 px-4 text-center">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="recent-entries-body" class="divide-y divide-gray-200">
+                                    <tbody id="recent-entries-body" class="divide-y divide-gray-200 dark:divide-gray-700">
                                     </tbody>
                                 </table>
                             </div>
@@ -412,58 +453,58 @@
             </div>
             
             <div id="management-content-container" class="hidden">
-              <div class="w-full bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div class="w-full bg-white rounded-2xl shadow-lg overflow-hidden dark:bg-gray-800">
                 <div class="p-6">
                   <!-- START: TWEAK 3 - Replaced title with dropdown -->
                   <div class="flex justify-between items-center flex-wrap gap-4 mb-4">
                       <div class="flex items-center gap-3">
-                          <h2 class="text-xl font-bold text-gray-800">Entries for:</h2>
-                          <select id="manage-journal-select" class="rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50"></select>
+                          <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Entries for:</h2>
+                          <select id="manage-journal-select" class="rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white"></select>
                       </div>
                       <button id="downloadBtn" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
                           Download Excel
                       </button>
                   </div>
                   <!-- END: TWEAK 3 -->
-                  <div class="bg-gray-100 rounded-lg p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                  <div class="bg-gray-100 rounded-lg p-4 mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center dark:bg-gray-700/50">
                       <div>
-                          <p class="text-sm font-medium text-gray-500">Filtered Income</p>
-                          <p id="filtered-income" class="text-lg font-bold text-lime-600">UGX 0</p>
+                          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Filtered Income</p>
+                          <p id="filtered-income" class="text-lg font-bold text-lime-600 dark:text-lime-500">UGX 0</p>
                       </div>
                       <div>
-                          <p class="text-sm font-medium text-gray-500">Filtered Expense</p>
-                          <p id="filtered-expense" class="text-lg font-bold text-red-600">UGX 0</p>
+                          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Filtered Expense</p>
+                          <p id="filtered-expense" class="text-lg font-bold text-red-600 dark:text-red-500">UGX 0</p>
                       </div>
                       <div>
-                          <p class="text-sm font-medium text-gray-500">Net</p>
-                          <p id="filtered-net" class="text-lg font-bold text-blue-800">UGX 0</p>
+                          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Net</p>
+                          <p id="filtered-net" class="text-lg font-bold text-blue-800 dark:text-blue-400">UGX 0</p>
                       </div>
                   </div>
                   <div id="manage-filters" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
-                          <label for="start-date" class="block text-sm font-medium text-gray-700">Start Date</label>
-                          <input type="date" id="start-date" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                          <label for="start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                          <input type="date" id="start-date" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:[color-scheme:dark]">
                       </div>
                       <div>
-                          <label for="end-date" class="block text-sm font-medium text-gray-700">End Date</label>
-                          <input type="date" id="end-date" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                          <label for="end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                          <input type="date" id="end-date" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:[color-scheme:dark]">
                       </div>
                       <div class="col-span-2 md:col-span-1">
                           <label class="block text-sm font-medium text-transparent">Actions</label>
                           <div class="flex gap-2">
-                            <button id="filter-by-date-btn" class="w-full mt-1 bg-orange-200 hover:bg-orange-300 text-orange-800 font-bold py-2 px-4 rounded-lg text-sm">Filter</button>
-                            <button id="clear-date-filter-btn" class="w-full mt-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">Clear</button>
+                            <button id="filter-by-date-btn" class="w-full mt-1 bg-orange-200 hover:bg-orange-300 text-orange-800 font-bold py-2 px-4 rounded-lg text-sm dark:bg-orange-800/50 dark:hover:bg-orange-800/80 dark:text-orange-200">Filter</button>
+                            <button id="clear-date-filter-btn" class="w-full mt-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200">Clear</button>
                           </div>
                       </div>
                   </div>
                   <div class="mb-4">
                       <label for="search-input" class="sr-only">Search Entries</label>
-                      <input type="search" id="search-input" placeholder="Search by narration..." class="w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                      <input type="search" id="search-input" placeholder="Search by narration..." class="w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
                   </div>
-                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pb-4 border-b border-gray-200">
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                       <div>
-                          <label for="sort-by" class="block text-sm font-medium text-gray-700">Sort by</label>
-                          <select id="sort-by" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                          <label for="sort-by" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sort by</label>
+                          <select id="sort-by" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                               <option value="date_desc">Newest First</option>
                               <option value="date_asc">Oldest First</option>
                               <option value="amount_desc">Amount (High-Low)</option>
@@ -471,16 +512,16 @@
                           </select>
                       </div>
                       <div>
-                          <label for="filter-type" class="block text-sm font-medium text-gray-700">Type</label>
-                          <select id="filter-type" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                          <label for="filter-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
+                          <select id="filter-type" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                               <option value="all">All</option>
                               <option value="Income">Income</option>
                               <option value="Expense">Expense</option>
                           </select>
                       </div>
                       <div>
-                          <label for="filter-method" class="block text-sm font-medium text-gray-700">Method</label>
-                          <select id="filter-method" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50">
+                          <label for="filter-method" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Method</label>
+                          <select id="filter-method" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                               <option value="all">All</option>
                               <option value="MTN">MTN</option>
                               <option value="Airtel">Airtel</option>
@@ -489,20 +530,20 @@
                       </div>
                        <div>
                           <label class="block text-sm font-medium text-transparent">Reset</label>
-                          <button id="reset-filters" class="w-full mt-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm">
+                          <button id="reset-filters" class="w-full mt-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200">
                               Reset All Filters
                           </button>
                       </div>
                   </div>
-                   <p id="statusMessage" class="text-center text-sm text-gray-600 mt-1 h-5"></p>
+                   <p id="statusMessage" class="text-center text-sm text-gray-600 dark:text-gray-400 mt-1 h-5"></p>
                 </div>
                 <div id="bulk-delete-wrapper" class="px-6 pb-4 flex items-center gap-4">
-                    <button id="bulk-delete-btn" class="hidden bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 px-4 rounded-lg text-sm">Delete Selected (0)</button>
+                    <button id="bulk-delete-btn" class="hidden bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 px-4 rounded-lg text-sm dark:bg-red-900/50 dark:hover:bg-red-900/80 dark:text-red-200">Delete Selected (0)</button>
                 </div>
                 <div class="overflow-x-auto">
                   <table id="entriesTable" class="min-w-full text-sm">
-                    <thead class="bg-gray-100 border-b border-gray-200">
-                      <tr class="text-left text-gray-600 uppercase tracking-wider">
+                    <thead class="bg-gray-100 border-b border-gray-200 dark:bg-gray-700 dark:border-gray-600">
+                      <tr class="text-left text-gray-600 uppercase tracking-wider dark:text-gray-400">
                         <th class="py-3 px-4 w-12 text-center"><input type="checkbox" id="select-all-checkbox"></th>
                         <th class="py-3 px-4">Date</th>
                         <th class="py-3 px-4">Type</th>
@@ -512,22 +553,22 @@
                         <th class="py-3 px-4 text-center">Actions</th>
                       </tr>
                     </thead>
-                    <tbody id="tableBody" class="divide-y divide-gray-200"></tbody>
+                    <tbody id="tableBody" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
                   </table>
                 </div>
                 <div id="pagination-controls" class="p-6 flex justify-center items-center gap-4 text-sm">
-                    <button id="prev-page-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">Previous</button>
-                    <span id="page-info">Page 1 of 1</span>
-                    <button id="next-page-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">Next</button>
+                    <button id="prev-page-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Previous</button>
+                    <span id="page-info" class="dark:text-gray-300">Page 1 of 1</span>
+                    <button id="next-page-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Next</button>
                 </div>
               </div>
             </div>
             
             <div id="data-management-content-container" class="hidden">
-                <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-2xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-2xl mx-auto dark:bg-gray-800">
                     <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
                         <!-- START: CHANGE #4 - Renamed title -->
-                        <h2 class="text-xl font-bold text-gray-800">Journals</h2>
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Journals</h2>
                         <!-- END: CHANGE #4 -->
                         <div class="flex items-center gap-2">
                             <button id="mergeJournalBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-sm">
@@ -538,7 +579,7 @@
                             </button>
                         </div>
                     </div>
-                    <p id="merge-status-message" class="text-center text-sm text-blue-800 bg-blue-100 p-2 rounded-lg mb-4 hidden"></p>
+                    <p id="merge-status-message" class="text-center text-sm text-blue-800 bg-blue-100 p-2 rounded-lg mb-4 hidden dark:bg-blue-900/50 dark:text-blue-200"></p>
                     <div id="journal-cards-container" class="space-y-3">
                     </div>
                 </div>
@@ -548,8 +589,8 @@
             <div id="admin-content-container" class="hidden">
                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="lg:col-span-1">
-                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
-                            <h2 class="text-xl font-bold text-gray-800 mb-4">Data Management</h2>
+                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-gray-800">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Data Management</h2>
                             <div class="space-y-4">
                                 <button id="downloadBackupBtn" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
                                     Download Backup (JSON)
@@ -562,10 +603,10 @@
                         </div>
                     </div>
                     <div class="lg:col-span-1">
-                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full">
-                            <h2 class="text-xl font-bold text-gray-800 mb-4">User Activities</h2>
+                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-gray-800">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">User Activities</h2>
                             <div id="activity-log-container" class="overflow-y-auto space-y-4" style="max-height: 40rem;">
-                                <p class="text-gray-500 text-center">Loading activity log...</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-center">Loading activity log...</p>
                                 <!-- Activity log will be rendered here -->
                             </div>
                         </div>
@@ -577,20 +618,20 @@
   </div>
 
   <div id="confirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
-      <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
-          <h3 id="modalTitle" class="text-lg font-bold text-gray-900 mb-2">Are you sure?</h3>
-          <p id="modalMessage" class="text-sm text-gray-600 mb-6">This action cannot be undone.</p>
+      <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center dark:bg-gray-800">
+          <h3 id="modalTitle" class="text-lg font-bold text-gray-900 mb-2 dark:text-gray-100">Are you sure?</h3>
+          <p id="modalMessage" class="text-sm text-gray-600 mb-6 dark:text-gray-300">This action cannot be undone.</p>
           <div class="flex justify-center gap-4">
-              <button id="modalCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors">Cancel</button>
+              <button id="modalCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Cancel</button>
               <button id="modalConfirmBtn" class="px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors">Confirm</button>
           </div>
       </div>
   </div>
 
     <div id="importOptionsModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
-      <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center">
-          <h3 class="text-lg font-bold text-gray-900 mb-2">Import Backup</h3>
-          <p class="text-sm text-gray-600 mb-6">How would you like to import the journals from the selected file?</p>
+      <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center dark:bg-gray-800">
+          <h3 class="text-lg font-bold text-gray-900 mb-2 dark:text-gray-100">Import Backup</h3>
+          <p class="text-sm text-gray-600 mb-6 dark:text-gray-300">How would you like to import the journals from the selected file?</p>
           <div class="space-y-3">
               <button id="importMergeBtn" class="w-full px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors">
                   Merge with Existing Data
@@ -600,55 +641,55 @@
                   Replace All Data
                   <span class="block text-xs font-normal opacity-80">Deletes all current data before importing.</span>
               </button>
-              <button id="importCancelBtn" class="w-full mt-4 px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors">Cancel</button>
+              <button id="importCancelBtn" class="w-full mt-4 px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Cancel</button>
           </div>
       </div>
   </div>
 
   <div id="editEntryModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
-        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-4">Edit Entry</h3>
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 dark:bg-gray-800">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Edit Entry</h3>
             <form id="editEntryForm" class="grid grid-cols-1 gap-4">
                 <input type="hidden" id="editEntryId">
                 <div>
-                  <label for="edit-date-day" class="block text-sm font-medium text-gray-700">Date</label>
+                  <label for="edit-date-day" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
                   <div class="mt-1 flex items-center gap-2 relative">
-                    <input type="number" id="edit-date-day" placeholder="DD" min="1" max="31" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                    <input type="number" id="edit-date-day" placeholder="DD" min="1" max="31" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                     <span class="text-gray-400">/</span>
-                    <input type="number" id="edit-date-month" placeholder="MM" min="1" max="12" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
+                    <input type="number" id="edit-date-month" placeholder="MM" min="1" max="12" required class="w-1/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                     <span class="text-gray-400">/</span>
-                    <input type="number" id="edit-date-year" placeholder="YYYY" min="1900" max="2100" required class="w-2/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center" />
-                    <button type="button" id="edit-date-picker-btn" class="p-2 rounded-lg hover:bg-gray-100">
-                      <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <input type="number" id="edit-date-year" placeholder="YYYY" min="1900" max="2100" required class="w-2/4 rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 text-center dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                    <button type="button" id="edit-date-picker-btn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </button>
                     <input type="date" id="edit-native-date-picker" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer" style="z-index: -1;" />
                   </div>
                 </div>
                 <div>
-                    <label for="editType" class="block text-sm font-medium text-gray-700">Entry Type</label>
-                    <select id="editType" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
+                    <label for="editType" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Entry Type</label>
+                    <select id="editType" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         <option value="Income">Income</option>
                         <option value="Expense">Expense</option>
                     </select>
                 </div>
                 <div>
-                    <label for="editMethod" class="block text-sm font-medium text-gray-700">Source / Method</label>
-                    <select id="editMethod" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2">
+                    <label for="editMethod" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source / Method</label>
+                    <select id="editMethod" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         <option value="MTN">MTN</option>
                         <option value="Airtel">Airtel</option>
                         <option value="Bank">Bank</option>
                     </select>
                 </div>
                 <div>
-                    <label for="editNarration" class="block text-sm font-medium text-gray-700">Narration / Category</label>
-                    <input type="text" id="editNarration" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                    <label for="editNarration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Category</label>
+                    <input type="text" id="editNarration" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                 </div>
                 <div>
-                    <label for="editAmount" class="block text-sm font-medium text-gray-700">Amount (UGX)</label>
-                    <input type="number" id="editAmount" min="0" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2" />
+                    <label for="editAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (UGX)</label>
+                    <input type="number" id="editAmount" min="0" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                 </div>
                 <div class="flex justify-end gap-4 mt-4">
-                    <button type="button" id="editCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors">Cancel</button>
+                    <button type="button" id="editCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200">Cancel</button>
                     <button type="submit" class="px-6 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors">Save Changes</button>
                 </div>
             </form>
@@ -691,6 +732,8 @@
     }
 
     // --- DOM ELEMENT REFERENCES ---
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const themeIcons = { light: document.getElementById('theme-icon-light'), dark: document.getElementById('theme-icon-dark'), system: document.getElementById('theme-icon-system') };
     const adminMenuBtn = document.getElementById('adminMenuBtn');
     const loginHelpBtn = document.getElementById('login-help-btn');
     const appHelpBtn = document.getElementById('app-help-btn');
@@ -798,6 +841,42 @@
     let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month' };
     let selectedEntryIds = new Set();
     let syncTimeout, inactivityTimer, tour;
+    
+    // --- THEME MANAGEMENT ---
+    const applyTheme = () => {
+        const theme = localStorage.getItem('theme') || 'system';
+        
+        let isDark;
+        if (theme === 'light') {
+            isDark = false;
+        } else if (theme === 'dark') {
+            isDark = true;
+        } else {
+            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        document.documentElement.classList.toggle('dark', isDark);
+
+        Object.values(themeIcons).forEach(icon => icon.classList.add('hidden'));
+        themeIcons[theme].classList.remove('hidden');
+
+        if (donutChartInstance || incomeBarChartInstance || expenseBarChartInstance || netBalanceAreaChartInstance) {
+            if (!tabContents.dashboard.classList.contains('hidden')) {
+                renderDashboard();
+            }
+        }
+    };
+
+    const cycleTheme = () => {
+        const currentTheme = localStorage.getItem('theme') || 'system';
+        const nextTheme = { system: 'light', light: 'dark', dark: 'system' }[currentTheme];
+        localStorage.setItem('theme', nextTheme);
+        applyTheme();
+    };
+
+    themeToggleBtn.addEventListener('click', cycleTheme);
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+
 
     // --- INACTIVITY & NOTIFICATIONS ---
     const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
@@ -828,7 +907,7 @@
             
             if (!currentUserProfile) return;
 
-            document.body.className = 'bg-gray-50 min-h-screen font-sans';
+            document.body.className = 'bg-gray-50 dark:bg-gray-900 min-h-screen font-sans';
             userEmailSpan.textContent = user.email;
             userEmailDropdown.textContent = user.email;
             updateRoleUI();
@@ -840,13 +919,14 @@
             currentUser = null;
             currentUserProfile = null;
             if (unsubscribeFromFirestore) unsubscribeFromFirestore();
-            document.body.className = 'bg-gray-100 min-h-screen font-sans';
+            document.body.className = 'bg-gray-100 dark:bg-gray-900 min-h-screen font-sans';
             userEmailSpan.textContent = '';
             syncStatus.innerHTML = '';
             appData = {};
             updateUI();
             removeInactivityListeners();
         }
+        applyTheme();
     });
 
     async function loadUserProfile(uid) {
@@ -889,6 +969,7 @@
         [mergeJournalBtn, importBackupBtn].forEach(btn => {
             btn.disabled = !isAdmin;
             btn.title = isAdmin ? '' : 'This feature is for admins only.';
+            btn.classList.toggle('hidden', !isAdmin); // Also hide it
         });
     }
 
@@ -969,7 +1050,7 @@
         }
 
         clearTimeout(syncTimeout);
-        syncStatus.innerHTML = `<svg class="animate-spin h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Saving...</span>`;
+        syncStatus.innerHTML = `<svg class="animate-spin h-4 w-4 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span class="dark:text-gray-400">Saving...</span>`;
         
         const orgDocRef = doc(db, "organizations", currentUserProfile.organizationId);
         
@@ -995,7 +1076,7 @@
 
         if (!hasJournals) {
             // This logic is simplified as the new dropdown handles the title
-            tableBody.innerHTML = `<tr id="placeholderRow"><td colspan="7" class="text-center py-10 text-gray-500">${isLoggedIn ? 'Create a journal to get started.' : 'Sign in to manage your journals.'}</td></tr>`;
+            tableBody.innerHTML = `<tr id="placeholderRow"><td colspan="7" class="text-center py-10 text-gray-500 dark:text-gray-400">${isLoggedIn ? 'Create a journal to get started.' : 'Sign in to manage your journals.'}</td></tr>`;
             [addEntryBtn, downloadBtn, downloadBackupBtn, searchInput].forEach(el => el.disabled = true); 
             createJournalBtn.disabled = !isLoggedIn;
             
@@ -1003,7 +1084,7 @@
             mergeJournalBtn.disabled = true;
             importBackupBtn.disabled = !isAdmin;
             
-            journalCardsContainer.innerHTML = `<p class="text-sm text-gray-500 text-center">No journals to display.</p>`;
+            journalCardsContainer.innerHTML = `<p class="text-sm text-gray-500 dark:text-gray-400 text-center">No journals to display.</p>`;
             dashboardMainContent.classList.add('hidden'); 
             dashboardMessage.classList.remove('hidden');
             renderTable(); // To render the (empty) dropdown
@@ -1030,10 +1111,10 @@
         const isManageTabActive = !tabContents.manage.classList.contains('hidden');
         if (isManageTabActive) {
             const allCard = document.createElement('div');
-            allCard.className = `journal-card p-4 border rounded-lg cursor-pointer transition-all ${viewOptions.currentJournalView === 'all' ? 'active' : 'border-gray-200 hover:bg-gray-50'}`;
+            allCard.className = `journal-card p-4 border rounded-lg cursor-pointer transition-all ${viewOptions.currentJournalView === 'all' ? 'active' : 'border-gray-200 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50'}`;
             allCard.dataset.id = 'all'; 
             const totalEntries = Object.values(journals).reduce((sum, j) => sum + (j.entries?.length || 0), 0); 
-            allCard.innerHTML = `<div class="flex justify-between items-center"> <div> <h3 class="font-bold text-gray-800">All Journals</h3> <p class="text-xs text-gray-500">${sortedIds.length} journals, ${totalEntries} entries</p> </div> ${!isMergeModeActive ? `<button class="select-journal-btn bg-gray-200 text-gray-800 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300" data-id="all">Select</button>` : ''} </div>`;
+            allCard.innerHTML = `<div class="flex justify-between items-center"> <div> <h3 class="font-bold text-gray-800 dark:text-gray-100">All Journals</h3> <p class="text-xs text-gray-500 dark:text-gray-400">${sortedIds.length} journals, ${totalEntries} entries</p> </div> ${!isMergeModeActive ? `<button class="select-journal-btn bg-gray-200 text-gray-800 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500" data-id="all">Select</button>` : ''} </div>`;
             if(isMergeModeActive) allCard.classList.add('disabled-card'); 
             journalCardsContainer.appendChild(allCard); 
         }
@@ -1046,7 +1127,7 @@
             const card = document.createElement('div'); 
             card.className = `journal-card p-4 border rounded-lg cursor-pointer transition-all`; 
             card.dataset.id = id; 
-            if (viewOptions.currentJournalView === id && !isMergeModeActive) { card.classList.add('active'); } else { card.classList.add('border-gray-200', 'hover:bg-gray-50'); }
+            if (viewOptions.currentJournalView === id && !isMergeModeActive) { card.classList.add('active'); } else { card.classList.add('border-gray-200', 'hover:bg-gray-50', 'dark:border-gray-700', 'dark:hover:bg-gray-700/50'); }
             
             let cardActionsHTML = '';
             if (isMergeModeActive) {
@@ -1054,17 +1135,17 @@
                     card.classList.add('disabled-card');
                 } else {
                     let buttonHTML = '';
-                    if (!mergeDestinationId) { buttonHTML = `<button class="select-merge-btn bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-blue-700" data-id="${id}">Select as Destination</button>`; } else { if (id === mergeDestinationId) { card.classList.add('merge-destination'); buttonHTML = `<span class="text-xs font-bold text-blue-800">DESTINATION</span>`; } else { if (canJournalsBeMerged(id, mergeDestinationId)) { buttonHTML = `<button class="select-merge-btn bg-lime-600 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-lime-700" data-id="${id}">Merge From Here</button>`; } else { card.classList.add('disabled-card'); buttonHTML = `<span class="text-xs font-bold text-red-700">Has different years</span>`; } } }
+                    if (!mergeDestinationId) { buttonHTML = `<button class="select-merge-btn bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-blue-700" data-id="${id}">Select as Destination</button>`; } else { if (id === mergeDestinationId) { card.classList.add('merge-destination'); buttonHTML = `<span class="text-xs font-bold text-blue-800 dark:text-blue-300">DESTINATION</span>`; } else { if (canJournalsBeMerged(id, mergeDestinationId)) { buttonHTML = `<button class="select-merge-btn bg-lime-600 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-lime-700" data-id="${id}">Merge From Here</button>`; } else { card.classList.add('disabled-card'); buttonHTML = `<span class="text-xs font-bold text-red-700 dark:text-red-400">Has different years</span>`; } } }
                     cardActionsHTML = `<div class="flex items-center gap-2">${buttonHTML}</div>`;
                 }
             } else {
-                const actionButtons = `
-                    <button class="rename-journal-btn text-xs font-semibold text-blue-600 hover:text-blue-800" data-id="${id}">Rename</button> 
-                    <button class="delete-journal-btn text-xs font-semibold text-red-600 hover:text-red-800" data-id="${id}">Delete</button>`;
-                
-                cardActionsHTML = `<div class="flex items-center gap-2"> ${actionButtons} <button class="select-journal-btn bg-gray-200 text-gray-800 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300" data-id="${id}">Select</button> </div>`;
+                 let actionButtons = `<button class="rename-journal-btn text-xs font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300" data-id="${id}">Rename</button>`;
+                if (isAdmin) {
+                    actionButtons += ` <button class="delete-journal-btn text-xs font-semibold text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300" data-id="${id}">Delete</button>`;
+                }
+                cardActionsHTML = `<div class="flex items-center gap-2"> ${actionButtons} <button class="select-journal-btn bg-gray-200 text-gray-800 text-xs font-bold py-1 px-3 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500" data-id="${id}">Select</button> </div>`;
             }
-            card.innerHTML = `<div class="flex justify-between items-center"> <div> <h3 class="font-bold text-gray-800 truncate">${journal.name}</h3> <p class="text-xs text-gray-500">${journal.entries?.length || 0} entries</p> </div> ${cardActionsHTML} </div>`;
+            card.innerHTML = `<div class="flex justify-between items-center"> <div> <h3 class="font-bold text-gray-800 truncate dark:text-gray-100">${journal.name}</h3> <p class="text-xs text-gray-500 dark:text-gray-400">${journal.entries?.length || 0} entries</p> </div> ${cardActionsHTML} </div>`;
             journalCardsContainer.appendChild(card);
         });
     }
@@ -1143,11 +1224,11 @@
       const activeJournalId = viewOptions.currentJournalView;
       const activeJournal = appData.journals[activeJournalId]; 
       if (viewOptions.currentJournalView === 'all' || !activeJournal || !activeJournal.entries || activeJournal.entries.length === 0) { 
-        recentEntriesBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">${viewOptions.currentJournalView === 'all' ? 'Select a journal to add entries.' : 'No recent entries to show.'}</td></tr>`; return; 
+        recentEntriesBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500 dark:text-gray-400">${viewOptions.currentJournalView === 'all' ? 'Select a journal to add entries.' : 'No recent entries to show.'}</td></tr>`; return; 
       } 
-      const recentEntries = [...activeJournal.entries].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 30); recentEntriesBody.innerHTML = recentEntries.map(entry => { const typeClass = entry.type === 'Income' ? 'bg-lime-100 text-lime-800' : 'bg-red-100 text-red-800'; return `<tr class="new-row"> <td class="py-2 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td> <td class="py-2 px-4 break-words">${entry.narration}</td> <td class="py-2 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">${entry.type}</span></td> <td class="py-2 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td> <td class="py-2 px-4 text-center whitespace-nowrap"> <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors text-xs mr-2">Edit</button> <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors text-xs">Delete</button> </td> </tr>`; }).join(''); }
+      const recentEntries = [...activeJournal.entries].sort((a, b) => b.id.localeCompare(a.id)).slice(0, 30); recentEntriesBody.innerHTML = recentEntries.map(entry => { const typeClass = entry.type === 'Income' ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/50 dark:text-lime-200' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'; return `<tr class="new-row dark:text-gray-300"> <td class="py-2 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td> <td class="py-2 px-4 break-words">${entry.narration}</td> <td class="py-2 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">${entry.type}</span></td> <td class="py-2 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td> <td class="py-2 px-4 text-center whitespace-nowrap"> <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-semibold transition-colors text-xs mr-2">Edit</button> <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-semibold transition-colors text-xs">Delete</button> </td> </tr>`; }).join(''); }
     
-    function updateFilteredSummary(filteredEntries) { const income = filteredEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0); const expense = filteredEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0); const net = income - expense; filteredIncomeEl.textContent = `UGX ${income.toLocaleString()}`; filteredExpenseEl.textContent = `UGX ${expense.toLocaleString()}`; filteredNetEl.textContent = `UGX ${net.toLocaleString()}`; filteredNetEl.className = `text-lg font-bold ${net >= 0 ? 'text-blue-800' : 'text-red-600'}`; }
+    function updateFilteredSummary(filteredEntries) { const income = filteredEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0); const expense = filteredEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0); const net = income - expense; filteredIncomeEl.textContent = `UGX ${income.toLocaleString()}`; filteredExpenseEl.textContent = `UGX ${expense.toLocaleString()}`; filteredNetEl.textContent = `UGX ${net.toLocaleString()}`; filteredNetEl.className = `text-lg font-bold ${net >= 0 ? 'text-blue-800 dark:text-blue-400' : 'text-red-600 dark:text-red-500'}`; }
     
     function renderTable() { 
         renderManageJournalSelector(); // TWEAK 3 - Render dropdown
@@ -1166,34 +1247,54 @@
         const entriesToRender = sortedEntries.slice(startIndex, endIndex); 
         tableBody.innerHTML = ''; 
         downloadBtn.disabled = allFilteredEntries.length === 0; 
-        if (allFilteredEntries.length === 0) { const hasAnyJournals = Object.keys(appData.journals || {}).length > 0; const message = hasAnyJournals ? "No entries match your current filters." : "No entries in this journal."; tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500">${message}</td></tr>`; } 
+        if (allFilteredEntries.length === 0) { const hasAnyJournals = Object.keys(appData.journals || {}).length > 0; const message = hasAnyJournals ? "No entries match your current filters." : "No entries in this journal."; tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500 dark:text-gray-400">${message}</td></tr>`; } 
         else { entriesToRender.forEach(entry => tableBody.appendChild(createRowElement(entry))); } 
         updatePaginationControls(sortedEntries.length, totalPages); 
         updateBulkDeleteButton(); 
         selectAllCheckbox.checked = false; 
     }
     
-    function createRowElement(entry) { const tr = document.createElement('tr'); tr.className = 'new-row'; tr.dataset.id = entry.id; const isChecked = selectedEntryIds.has(entry.id); tr.innerHTML = ` <td class="py-3 px-4 w-12 text-center"><input type="checkbox" data-id="${entry.id}" class="row-checkbox" ${isChecked ? 'checked' : ''}></td> <td class="py-3 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td> <td class="py-3 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${entry.type === 'Income' ? 'bg-lime-100 text-lime-800' : 'bg-red-100 text-red-800'}">${entry.type}</span></td> <td class="py-3 px-4 whitespace-nowrap">${entry.method}</td> <td class="py-3 px-4 break-words">${entry.narration}</td> <td class="py-3 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td> <td class="py-3 px-4 text-center whitespace-nowrap"> <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 font-semibold transition-colors mr-2">Edit</button> <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 font-semibold transition-colors">Delete</button> </td>`; return tr; }
+    function createRowElement(entry) { const tr = document.createElement('tr'); tr.className = 'new-row dark:text-gray-300'; tr.dataset.id = entry.id; const isChecked = selectedEntryIds.has(entry.id); tr.innerHTML = ` <td class="py-3 px-4 w-12 text-center"><input type="checkbox" data-id="${entry.id}" class="row-checkbox" ${isChecked ? 'checked' : ''}></td> <td class="py-3 px-4 whitespace-nowrap">${getFormattedDate(entry.date)}</td> <td class="py-3 px-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${entry.type === 'Income' ? 'bg-lime-100 text-lime-800 dark:bg-lime-900/50 dark:text-lime-200' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200'}">${entry.type}</span></td> <td class="py-3 px-4 whitespace-nowrap">${entry.method}</td> <td class="py-3 px-4 break-words">${entry.narration}</td> <td class="py-3 px-4 text-right font-mono">${(entry.amount || 0).toLocaleString()}</td> <td class="py-3 px-4 text-center whitespace-nowrap"> <button data-id="${entry.id}" class="edit-btn text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-semibold transition-colors mr-2">Edit</button> <button data-id="${entry.id}" class="delete-btn text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-semibold transition-colors">Delete</button> </td>`; return tr; }
     
     function updatePaginationControls(totalEntries, totalPages) { pageInfo.textContent = `Page ${viewOptions.currentPage} of ${totalPages || 1}`; prevPageBtn.disabled = viewOptions.currentPage === 1; nextPageBtn.disabled = viewOptions.currentPage >= totalPages; }
     
     function renderDashboard() { if (!appData.journals || Object.keys(appData.journals).length === 0) { dashboardMainContent.classList.add('hidden'); dashboardMessage.classList.remove('hidden'); return; }; dashboardMainContent.classList.remove('hidden'); dashboardMessage.classList.add('hidden'); const rangeText = { week: 'This Week', month: 'This Month', year: 'This Year', all: 'All Time' }; let journalTitle = "Dashboard"; if (viewOptions.currentJournalView === 'all') { journalTitle = 'All Journals'; } else if (appData.journals[viewOptions.currentJournalView]) { journalTitle = appData.journals[viewOptions.currentJournalView].name; } dashboardTitle.textContent = `${journalTitle} (${rangeText[viewOptions.dashboardDateRange]})`; const { currentPeriod, prevPeriod } = getDateRanges(viewOptions.dashboardDateRange); const allEntries = getFilteredEntries(); const currentEntries = allEntries.filter(e => { const entryDate = new Date(e.date); return entryDate >= currentPeriod.start && entryDate <= currentPeriod.end; }); const prevEntriesAll = getFilteredEntries(); const prevEntries = prevEntriesAll.filter(e => { const entryDate = new Date(e.date); return entryDate >= prevPeriod.start && entryDate <= prevPeriod.end; }); const currentIncome = currentEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0); const currentExpense = currentEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0); const currentNet = currentIncome - currentExpense; const prevIncome = prevEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0); const prevExpense = prevEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0); const prevNet = prevIncome - prevExpense; kpiIncomeEl.textContent = formatAmountForDashboard(currentIncome); kpiExpenseEl.textContent = formatAmountForDashboard(currentExpense); kpiNetEl.textContent = formatAmountForDashboard(currentNet); kpiIncomeCompEl.innerHTML = getComparisonHTML(currentIncome, prevIncome); kpiExpenseCompEl.innerHTML = getComparisonHTML(currentExpense, prevExpense, true); kpiNetCompEl.innerHTML = getComparisonHTML(currentNet, prevNet); updateChartButtonStyles(); let interval = 'day'; if (viewOptions.dashboardDateRange === 'all') { interval = 'quarter'; } else if (viewOptions.dashboardDateRange === 'year') { interval = 'month'; } const groupedIncome = groupDataByInterval(currentEntries.filter(e => e.type === 'Income'), interval, currentPeriod); incomeBarChartInstance = renderBarChart(incomeBarChartInstance, incomeBarChartCanvas, 'Income Over Time', groupedIncome, '#84cc16'); const groupedExpense = groupDataByInterval(currentEntries.filter(e => e.type === 'Expense'), interval, currentPeriod); expenseBarChartInstance = renderBarChart(expenseBarChartInstance, expenseBarChartCanvas, 'Expense Over Time', groupedExpense, '#ef4444'); const netBalanceData = calculateNetBalanceOverTime(currentEntries, interval, currentPeriod); netBalanceAreaChartInstance = renderAreaChart(netBalanceAreaChartInstance, netBalanceAreaChartCanvas, 'Net Balance Over Time', netBalanceData); donutChartInstance = renderDonutChart(donutChartInstance, donutChartCanvas, currentEntries, viewOptions.chartDataType); }
     
-    function getComparisonHTML(current, previous, invert = false) { if (previous === 0) { return current > 0 ? `<span class="text-lime-600">↑ New</span>` : `<span class="text-gray-500">-</span>`; } const percentChange = ((current - previous) / previous) * 100; const isUp = percentChange > 0; const isDown = percentChange < 0; let colorClass = 'text-gray-500'; if ((isUp && !invert) || (isDown && invert)) colorClass = 'text-lime-600'; if ((isDown && !invert) || (isUp && invert)) colorClass = 'text-red-600'; const arrow = isUp ? '↑' : '↓'; const formattedPercent = Math.abs(percentChange).toFixed(0); if (Math.abs(formattedPercent) < 1) return `<span class="text-gray-500">~ 0%</span>`; return `<span class="${colorClass}">${arrow} ${formattedPercent}% vs previous period</span>`; }
+    function getComparisonHTML(current, previous, invert = false) { if (previous === 0) { return current > 0 ? `<span class="text-lime-600">↑ New</span>` : `<span class="text-gray-500 dark:text-gray-400">-</span>`; } const percentChange = ((current - previous) / previous) * 100; const isUp = percentChange > 0; const isDown = percentChange < 0; let colorClass = 'text-gray-500 dark:text-gray-400'; if ((isUp && !invert) || (isDown && invert)) colorClass = 'text-lime-600 dark:text-lime-400'; if ((isDown && !invert) || (isUp && invert)) colorClass = 'text-red-600 dark:text-red-400'; const arrow = isUp ? '↑' : '↓'; const formattedPercent = Math.abs(percentChange).toFixed(0); if (Math.abs(formattedPercent) < 1) return `<span class="text-gray-500 dark:text-gray-400">~ 0%</span>`; return `<span class="${colorClass}">${arrow} ${formattedPercent}% vs previous period</span>`; }
     
     function getDateRanges(rangeKey) { const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); let currentPeriod = { start: new Date(), end: new Date() }; let prevPeriod = { start: new Date(), end: new Date() }; switch (rangeKey) { case 'week': currentPeriod.start = new Date(today); currentPeriod.start.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1)); currentPeriod.end = new Date(currentPeriod.start); currentPeriod.end.setDate(currentPeriod.start.getDate() + 6); prevPeriod.start = new Date(currentPeriod.start); prevPeriod.start.setDate(currentPeriod.start.getDate() - 7); prevPeriod.end = new Date(currentPeriod.end); prevPeriod.end.setDate(currentPeriod.end.getDate() - 7); break; case 'year': currentPeriod.start = new Date(today.getFullYear(), 0, 1); currentPeriod.end = new Date(today.getFullYear(), 11, 31); prevPeriod.start = new Date(today.getFullYear() - 1, 0, 1); prevPeriod.end = new Date(today.getFullYear() - 1, 11, 31); break; case 'all': const allEntries = getFilteredEntries(); if (allEntries.length > 0) { const firstDate = new Date(allEntries.sort((a, b) => new Date(a.date) - new Date(b.date))[0].date); currentPeriod.start = new Date(firstDate.getFullYear(), 0, 1); } else { currentPeriod.start = new Date(today.getFullYear(), 0, 1); } currentPeriod.end = new Date(today.getFullYear(), 11, 31); prevPeriod.start = new Date(currentPeriod.start); prevPeriod.start.setFullYear(prevPeriod.start.getFullYear() - 1); prevPeriod.end = new Date(currentPeriod.end); prevPeriod.end.setFullYear(prevPeriod.end.getFullYear() - 1); break; case 'month': default: currentPeriod.start = new Date(today.getFullYear(), today.getMonth(), 1); currentPeriod.end = new Date(today.getFullYear(), today.getMonth() + 1, 0); prevPeriod.start = new Date(today.getFullYear(), today.getMonth() - 1, 1); prevPeriod.end = new Date(today.getFullYear(), today.getMonth(), 0); break; } return { currentPeriod, prevPeriod }; }
     
     function updateChartButtonStyles() { kpiRangeBtns.forEach(btn => { if (btn.dataset.range === viewOptions.dashboardDateRange) { btn.classList.add('active'); } else { btn.classList.remove('active'); } }); Object.values(chartTypeBtns).forEach(btn => btn.classList.remove('active')); chartTypeBtns[viewOptions.chartDataType].classList.add('active'); }
     
-    function renderDonutChart(instance, canvas, entries, type) { if (instance) instance.destroy(); const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1); const dataMap = entries.filter(e => e.type === capitalizedType).reduce((acc, entry) => { const key = entry.method || 'Other'; acc[key] = (acc[key] || 0) + entry.amount; return acc; }, {}); const labels = Object.keys(dataMap); const data = Object.values(dataMap); const noDataMessage = capitalizedType === 'Income' ? 'No income data for this period.' : 'No expense data for this period.'; if (labels.length === 0) { const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#6b7280'; ctx.font = '14px "Inter", sans-serif'; ctx.fillText(noDataMessage, canvas.width / 2, canvas.height / 2); ctx.restore(); return null; } const colorPalettes = { Expense: ['#f97316', '#facc15', '#2563eb'], Income: ['#48e7b7', '#7ae03f', '#10b981'] }; return new Chart(canvas, { type: 'doughnut', data: { labels, datasets: [{ label: capitalizedType, data, backgroundColor: colorPalettes[capitalizedType] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' } } } }); }
+    function renderDonutChart(instance, canvas, entries, type) { 
+        if (instance) instance.destroy(); 
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const textColor = isDarkMode ? '#d1d5db' : '#4b5563';
+        const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1); const dataMap = entries.filter(e => e.type === capitalizedType).reduce((acc, entry) => { const key = entry.method || 'Other'; acc[key] = (acc[key] || 0) + entry.amount; return acc; }, {}); const labels = Object.keys(dataMap); const data = Object.values(dataMap); const noDataMessage = capitalizedType === 'Income' ? 'No income data for this period.' : 'No expense data for this period.'; if (labels.length === 0) { const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = textColor; ctx.font = '14px "Inter", sans-serif'; ctx.fillText(noDataMessage, canvas.width / 2, canvas.height / 2); ctx.restore(); return null; } const colorPalettes = { Expense: ['#f97316', '#facc15', '#2563eb'], Income: ['#48e7b7', '#7ae03f', '#10b981'] }; 
+        return new Chart(canvas, { type: 'doughnut', data: { labels, datasets: [{ label: capitalizedType, data, backgroundColor: colorPalettes[capitalizedType] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom', labels: { color: textColor } } } } }); 
+    }
     
     function groupDataByInterval(entries, interval, period) { const dataMap = new Map(); let currentDate = new Date(period.start); while(currentDate <= period.end) { const key = getIntervalKey(currentDate, interval); dataMap.set(key, 0); if (interval === 'day') { currentDate.setDate(currentDate.getDate() + 1); } else if (interval === 'month') { currentDate.setMonth(currentDate.getMonth() + 1); } else if (interval === 'quarter') { currentDate.setMonth(currentDate.getMonth() + 3); } } entries.forEach(entry => { const entryDate = new Date(entry.date); entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset()); const key = getIntervalKey(entryDate, interval); if(dataMap.has(key)) { dataMap.set(key, dataMap.get(key) + entry.amount); } }); const labels = [...dataMap.keys()].map(key => { if(interval === 'day') { const [y, m, d] = key.split('-'); return `${d}/${m}`; } if (interval === 'month') { const [y, m] = key.split('-'); return new Date(y, m-1).toLocaleString('default', { month: 'short' }); } if (interval === 'quarter') { const [y, q] = key.split('-'); return `${q} '${y.slice(2)}`; } }); return { labels, data: [...dataMap.values()]}; }
     
     function calculateNetBalanceOverTime(entries, interval, period) { const sortedEntries = [...entries].sort((a,b) => new Date(a.date) - new Date(b.date)); const balanceMap = new Map(); let currentDate = new Date(period.start); while(currentDate <= period.end) { const key = getIntervalKey(currentDate, interval); balanceMap.set(key, 0); if (interval === 'day') { currentDate.setDate(currentDate.getDate() + 1); } else if (interval === 'month') { currentDate.setMonth(currentDate.getMonth() + 1); } else if (interval === 'quarter') { currentDate.setMonth(currentDate.getMonth() + 3); } } sortedEntries.forEach(entry => { const entryDate = new Date(entry.date); entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset()); const key = getIntervalKey(entryDate, interval); const value = entry.type === 'Income' ? entry.amount : -entry.amount; if (balanceMap.has(key)) { balanceMap.set(key, balanceMap.get(key) + value); } }); let cumulativeBalance = 0; const finalData = []; balanceMap.forEach(value => { cumulativeBalance += value; finalData.push(cumulativeBalance); }); const labels = [...balanceMap.keys()].map(key => { if(interval === 'day') { const [y, m, d] = key.split('-'); return `${d}/${m}`; } if (interval === 'month') { const [y, m] = key.split('-'); return new Date(y, m-1).toLocaleString('default', { month: 'short' }); } if (interval === 'quarter') { const [y, q] = key.split('-'); return `${q} '${y.slice(2)}`; } }); return { labels, data: finalData }; }
     
-    function renderBarChart(instance, canvas, label, chartData, color) { if (instance) instance.destroy(); return new Chart(canvas, { type: 'bar', data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, backgroundColor: color }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label }, legend: { display: false } }, scales: { y: { beginAtZero: true } } } }); }
+    function renderBarChart(instance, canvas, label, chartData, color) { 
+        if (instance) instance.destroy(); 
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        const textColor = isDarkMode ? '#d1d5db' : '#4b5563';
+        return new Chart(canvas, { type: 'bar', data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, backgroundColor: color }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label, color: textColor }, legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } }, x: { grid: { color: gridColor }, ticks: { color: textColor } } } } }); 
+    }
     
-    function renderAreaChart(instance, canvas, label, chartData) { if (instance) instance.destroy(); return new Chart(canvas, { type: 'line', data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, fill: true, borderColor: '#4338ca', backgroundColor: 'rgba(79, 70, 229, 0.1)', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label }, legend: { display: false } }, scales: { y: { beginAtZero: false } } } }); }
+    function renderAreaChart(instance, canvas, label, chartData) { 
+        if (instance) instance.destroy();
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        const textColor = isDarkMode ? '#d1d5db' : '#4b5563'; 
+        const areaBgColor = isDarkMode ? 'rgba(99, 102, 241, 0.2)' : 'rgba(79, 70, 229, 0.1)';
+        const borderColor = isDarkMode ? '#818cf8' : '#4338ca';
+        return new Chart(canvas, { type: 'line', data: { labels: chartData.labels, datasets: [{ label, data: chartData.data, fill: true, borderColor: borderColor, backgroundColor: areaBgColor, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: label, color: textColor }, legend: { display: false } }, scales: { y: { beginAtZero: false, grid: { color: gridColor }, ticks: { color: textColor } }, x: { grid: { color: gridColor }, ticks: { color: textColor } } } } }); 
+    }
     
     function assembleAndValidateDate(dayInput, monthInput, yearInput) { let day = parseInt(dayInput.value, 10); let month = parseInt(monthInput.value, 10); let year = parseInt(yearInput.value, 10); if (!day || !month || !year || year.toString().length < 4) { showToast("Please enter a full date (DD, MM, YYYY).", 'error'); return null; } if (month < 1) month = 1; if (month > 12) month = 12; const daysInMonth = new Date(year, month, 0).getDate(); if (day > daysInMonth) { showToast(`Warning: ${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} only has ${daysInMonth} days. Correcting date.`, 'info'); day = daysInMonth; } if (day < 1) day = 1; dayInput.value = String(day).padStart(2, '0'); monthInput.value = String(month).padStart(2, '0'); yearInput.value = String(year); return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`; }
     
@@ -1388,7 +1489,7 @@
             activityLogContainer.innerHTML = `<p class="text-red-500 text-center">Cannot load activities: Admin status or organization is missing.</p>`;
             return;
         };
-        activityLogContainer.innerHTML = `<p class="text-gray-500 text-center">Loading activity log...</p>`;
+        activityLogContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400 text-center">Loading activity log...</p>`;
         try {
             const activitiesColRef = collection(db, 'activity_logs');
             const q = query(activitiesColRef, 
@@ -1401,7 +1502,7 @@
             querySnapshot.forEach(doc => activities.push({ id: doc.id, ...doc.data() }));
             
             if (activities.length === 0) {
-                activityLogContainer.innerHTML = `<p class="text-gray-500 text-center">No user activities recorded yet.</p>`;
+                activityLogContainer.innerHTML = `<p class="text-gray-500 dark:text-gray-400 text-center">No user activities recorded yet.</p>`;
                 return;
             }
 
@@ -1410,18 +1511,18 @@
                 let detailsHtml = '';
                 if (log.details) {
                     detailsHtml = Object.entries(log.details)
-                        .map(([key, value]) => `<span class="text-xs text-gray-500 mr-2"><strong>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> ${value}</span>`)
+                        .map(([key, value]) => `<span class="text-xs text-gray-500 dark:text-gray-400 mr-2"><strong>${key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}:</strong> ${value}</span>`)
                         .join('');
                 }
 
                 return `
-                    <div class="p-3 rounded-lg bg-gray-50 border border-gray-200">
+                    <div class="p-3 rounded-lg bg-gray-50 border border-gray-200 dark:bg-gray-800/50 dark:border-gray-700">
                         <div class="flex justify-between items-center">
-                            <p class="font-semibold text-gray-800">${log.action.replace(/_/g, ' ').toUpperCase()}</p>
-                            <p class="text-xs text-gray-500">${timestamp}</p>
+                            <p class="font-semibold text-gray-800 dark:text-gray-200">${log.action.replace(/_/g, ' ').toUpperCase()}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">${timestamp}</p>
                         </div>
-                        <p class="text-sm text-gray-600 mt-1">
-                            by <span class="font-medium text-orange-600">${log.userEmail}</span>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                            by <span class="font-medium text-orange-600 dark:text-orange-400">${log.userEmail}</span>
                         </p>
                         <div class="mt-2">
                            ${detailsHtml}
@@ -1464,14 +1565,14 @@
         Object.values(tabContents).forEach(content => content.classList.add('hidden')); 
         Object.values(tabButtons).forEach(button => { 
             button.classList.remove('bg-orange-500', 'text-white'); 
-            button.classList.add('text-gray-500', 'hover:bg-gray-200'); 
+            button.classList.add('text-gray-500', 'hover:bg-gray-200', 'dark:text-gray-400', 'dark:hover:bg-gray-700'); 
         }); 
 
         tabContents[activeTabKey].classList.remove('hidden'); 
 
         if(tabButtons[activeTabKey]) {
             tabButtons[activeTabKey].classList.add('bg-orange-500', 'text-white'); 
-            tabButtons[activeTabKey].classList.remove('text-gray-500', 'hover:bg-gray-200'); 
+            tabButtons[activeTabKey].classList.remove('text-gray-500', 'hover:bg-gray-200', 'dark:text-gray-400', 'dark:hover:bg-gray-700'); 
         }
         
         if (activeTabKey === 'admin') {
@@ -1563,7 +1664,7 @@
             setActiveJournalView(journalId, true); 
         } else if (isRenameAction) { 
             renameActiveJournal(journalId); 
-        } else if (isDeleteAction) { 
+        } else if (isDeleteAction && isAdmin) { // Extra check for safety
             const name = appData.journals[journalId]?.name;
             if (name) showConfirmationModal(`Delete '${name}' and all its entries? This cannot be undone.`, () => deleteActiveJournal(journalId)); 
         } 
@@ -1781,6 +1882,9 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
             statusMessage.textContent = '';
         }
     });
+
+    // Initial theme setup on script load
+    applyTheme();
 
   </script>
 </body>
