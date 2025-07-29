@@ -719,6 +719,20 @@
             </form>
         </div>
     </div>
+    
+  <div id="inputModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+      <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 dark:bg-gray-800">
+          <h3 id="inputModalTitle" class="text-lg font-bold text-gray-900 mb-2 dark:text-gray-100">Enter a value</h3>
+          <p id="inputModalMessage" class="text-sm text-gray-600 mb-4 dark:text-gray-300">Please provide the required information.</p>
+          <form id="inputModalForm">
+              <input type="text" id="inputModalField" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
+              <div class="flex justify-end gap-4 mt-6">
+                  <button id="inputModalCancelBtn" type="button" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Cancel</button>
+                  <button id="inputModalConfirmBtn" type="submit" class="px-6 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors">Confirm</button>
+              </div>
+          </form>
+      </div>
+  </div>
 
   <div id="toast-container" class="fixed bottom-4 right-4 z-[9999] space-y-2"></div>
 
@@ -822,6 +836,12 @@
     const modalMessage = document.getElementById('modalMessage');
     const modalConfirmBtn = document.getElementById('modalConfirmBtn');
     const modalCancelBtn = document.getElementById('modalCancelBtn');
+    const inputModal = document.getElementById('inputModal');
+    const inputModalForm = document.getElementById('inputModalForm');
+    const inputModalTitle = document.getElementById('inputModalTitle');
+    const inputModalMessage = document.getElementById('inputModalMessage');
+    const inputModalField = document.getElementById('inputModalField');
+    const inputModalCancelBtn = document.getElementById('inputModalCancelBtn');
     const editEntryModal = document.getElementById('editEntryModal');
     const editEntryForm = document.getElementById('editEntryForm');
     const editCancelBtn = document.getElementById('editCancelBtn');
@@ -871,7 +891,7 @@
     let isMergeModeActive = false, mergeDestinationId = null;
     let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month' };
     let selectedEntryIds = new Set();
-    let syncTimeout, inactivityTimer, tour;
+    let syncTimeout, inactivityTimer, tour, inputConfirmCallback = null, undoCache = null;
     
     // --- THEME MANAGEMENT ---
     const applyTheme = () => {
@@ -911,7 +931,36 @@
 
     // --- INACTIVITY & NOTIFICATIONS ---
     const activityEvents = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
-    function showToast(message, type = 'success') { const container = document.getElementById('toast-container'); const toast = document.createElement('div'); const colors = { success: 'bg-lime-600', error: 'bg-red-600', info: 'bg-blue-800' }; toast.className = `toast text-white py-2 px-4 rounded-lg shadow-xl ${colors[type] || colors.info}`; toast.textContent = message; container.appendChild(toast); setTimeout(() => { toast.classList.add('fading-out'); toast.addEventListener('animationend', () => toast.remove()); }, 5000); }
+    function showToast(message, type = 'success', options = {}) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const colors = { success: 'bg-lime-600', error: 'bg-red-600', info: 'bg-blue-800' };
+        toast.className = `toast text-white py-2 px-4 rounded-lg shadow-xl ${colors[type] || colors.info} flex items-center justify-between gap-4`;
+
+        const messageEl = document.createElement('span');
+        messageEl.textContent = message;
+        toast.appendChild(messageEl);
+
+        if (options.actionText && options.action) {
+            const actionBtn = document.createElement('button');
+            actionBtn.className = 'font-bold text-sm underline hover:text-white/80';
+            actionBtn.textContent = options.actionText;
+            actionBtn.onclick = () => {
+                options.action();
+                toast.remove();
+            };
+            toast.appendChild(actionBtn);
+        }
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast) {
+                toast.classList.add('fading-out');
+                toast.addEventListener('animationend', () => toast.remove());
+            }
+        }, options.duration || 7000);
+    }
     function logoutDueToInactivity() { if (auth.currentUser) { signOut(auth); showToast("Logged out due to inactivity", "info"); } }
     function resetInactivityTimer() { clearTimeout(inactivityTimer); inactivityTimer = setTimeout(logoutDueToInactivity, 30 * 60 * 1000); }
     function setupInactivityListeners() { activityEvents.forEach(event => window.addEventListener(event, resetInactivityTimer, true)); resetInactivityTimer(); }
@@ -1048,7 +1097,6 @@
             });
         } catch (error) {
             console.error("Error logging activity: ", error);
-            // Don't show a toast for this, as it's a background task.
         }
     }
 
@@ -1063,9 +1111,9 @@
             if (docSnap.exists()) {
                 appData = docSnap.data();
                 const journalIds = Object.keys(appData.journals || {});
-                let initialView = viewOptions.currentJournalView; // Keep current view
+                let initialView = viewOptions.currentJournalView; 
                 if (!journalIds.includes(initialView) && initialView !== 'all') {
-                  initialView = 'all'; // Reset if journal was deleted
+                  initialView = 'all'; 
                 }
                 viewOptions.currentJournalView = initialView;
                 lastActiveSingleJournalId = (initialView !== 'all') ? initialView : (lastActiveSingleJournalId || journalIds[0] || null);
@@ -1107,7 +1155,6 @@
         
         const orgDocRef = doc(db, "organizations", currentUserProfile.organizationId);
         
-        // Use setDoc with merge:true to avoid race conditions and accidental data deletion
         return setDoc(orgDocRef, appData, { merge: true })
             .then(() => {
                 syncStatus.innerHTML = `<span class="text-green-600">✓ Synced</span>`;
@@ -1311,8 +1358,62 @@
         if (instance) instance.destroy(); 
         const isDarkMode = document.documentElement.classList.contains('dark');
         const textColor = isDarkMode ? '#d1d5db' : '#4b5563';
-        const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1); const dataMap = entries.filter(e => e.type === capitalizedType).reduce((acc, entry) => { const key = entry.method || 'Other'; acc[key] = (acc[key] || 0) + entry.amount; return acc; }, {}); const labels = Object.keys(dataMap); const data = Object.values(dataMap); const noDataMessage = capitalizedType === 'Income' ? 'No income data for this period.' : 'No expense data for this period.'; if (labels.length === 0) { const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = textColor; ctx.font = '14px "Inter", sans-serif'; ctx.fillText(noDataMessage, canvas.width / 2, canvas.height / 2); ctx.restore(); return null; } const colorPalettes = { Expense: ['#f97316', '#facc15', '#2563eb'], Income: ['#48e7b7', '#7ae03f', '#10b981'] }; 
-        return new Chart(canvas, { type: 'doughnut', data: { labels, datasets: [{ label: capitalizedType, data, backgroundColor: colorPalettes[capitalizedType] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom', labels: { color: textColor } } } } }); 
+        const capitalizedType = type.charAt(0).toUpperCase() + type.slice(1); 
+        const dataMap = entries.filter(e => e.type === capitalizedType).reduce((acc, entry) => { 
+            const key = entry.method || 'Other'; 
+            acc[key] = (acc[key] || 0) + entry.amount; 
+            return acc; 
+        }, {}); 
+        const labels = Object.keys(dataMap); 
+        const data = Object.values(dataMap); 
+        const noDataMessage = capitalizedType === 'Income' ? 'No income data for this period.' : 'No expense data for this period.'; 
+        
+        if (labels.length === 0) { 
+            const ctx = canvas.getContext('2d'); 
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
+            ctx.save(); 
+            ctx.textAlign = 'center'; 
+            ctx.textBaseline = 'middle'; 
+            ctx.fillStyle = textColor; 
+            ctx.font = '14px "Inter", sans-serif'; 
+            ctx.fillText(noDataMessage, canvas.width / 2, canvas.height / 2); 
+            ctx.restore(); 
+            return null; 
+        } 
+        
+        const colorPalettes = { Expense: ['#f97316', '#facc15', '#2563eb'], Income: ['#48e7b7', '#7ae03f', '#10b981'] }; 
+        
+        return new Chart(canvas, { 
+            type: 'doughnut', 
+            data: { labels, datasets: [{ label: capitalizedType, data, backgroundColor: colorPalettes[capitalizedType] }] }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: true, position: 'bottom', labels: { color: textColor } } },
+                onClick: (event, elements) => {
+                    if (elements.length > 0) {
+                        const clickedElementIndex = elements[0].index;
+                        const clickedLabel = labels[clickedElementIndex];
+                        
+                        handleTabSwitch('manage');
+                        
+                        filterMethodSelect.value = clickedLabel;
+                        viewOptions.filterByMethod = clickedLabel;
+                        filterTypeSelect.value = capitalizedType;
+                        viewOptions.filterByType = capitalizedType;
+                        
+                        searchInput.value = '';
+                        viewOptions.searchTerm = '';
+                        startDateInput.value = '';
+                        endDateInput.value = '';
+                        viewOptions.startDate = null;
+                        viewOptions.endDate = null;
+                        
+                        renderTable();
+                    }
+                }
+            } 
+        }); 
     }
     
     function groupDataByInterval(entries, interval, period) { const dataMap = new Map(); let currentDate = new Date(period.start); while(currentDate <= period.end) { const key = getIntervalKey(currentDate, interval); dataMap.set(key, 0); if (interval === 'day') { currentDate.setDate(currentDate.getDate() + 1); } else if (interval === 'month') { currentDate.setMonth(currentDate.getMonth() + 1); } else if (interval === 'quarter') { currentDate.setMonth(currentDate.getMonth() + 3); } } entries.forEach(entry => { const entryDate = new Date(entry.date); entryDate.setMinutes(entryDate.getMinutes() + entryDate.getTimezoneOffset()); const key = getIntervalKey(entryDate, interval); if(dataMap.has(key)) { dataMap.set(key, dataMap.get(key) + entry.amount); } }); const labels = [...dataMap.keys()].map(key => { if(interval === 'day') { const [y, m, d] = key.split('-'); return `${d}/${m}`; } if (interval === 'month') { const [y, m] = key.split('-'); return new Date(y, m-1).toLocaleString('default', { month: 'short' }); } if (interval === 'quarter') { const [y, q] = key.split('-'); return `${q} '${y.slice(2)}`; } }); return { labels, data: [...dataMap.values()]}; }
@@ -1367,22 +1468,23 @@
     function isJournalNameTaken(name, excludingId = null) { const lowerCaseName = name.trim().toLowerCase(); for (const id in appData.journals) { if (id === excludingId) continue; if (appData.journals[id].name.toLowerCase() === lowerCaseName) { return true; } } return false; }
     
     function createNewJournal() {
-        const journalName = window.prompt("Enter a name for the new journal:", "New Journal");
-        if (!journalName || journalName.trim() === '') return;
-        if (isJournalNameTaken(journalName)) {
-            showToast(`A journal named '${journalName.trim()}' already exists.`, "error");
-            return;
-        }
-        const newId = `journal_${Date.now()}`;
-        if (!appData.journals) appData.journals = {};
-        appData.journals[newId] = { name: journalName.trim(), entries: [], lastModified: new Date().toISOString() };
-        appData.activeJournalId = newId;
-        viewOptions.currentJournalView = newId;
-        
-        saveDataToFirestore().then(() => {
-            logActivity('create_journal', { journalName: journalName.trim() });
-            showToast("Journal created!", "success");
-            updateUI();
+        showInputModal("Create New Journal", "Enter a name for the new journal:", "New Journal", (journalName) => {
+            if (!journalName || journalName.trim() === '') return;
+            if (isJournalNameTaken(journalName)) {
+                showToast(`A journal named '${journalName.trim()}' already exists.`, "error");
+                return;
+            }
+            const newId = `journal_${Date.now()}`;
+            if (!appData.journals) appData.journals = {};
+            appData.journals[newId] = { name: journalName.trim(), entries: [], lastModified: new Date().toISOString() };
+            appData.activeJournalId = newId;
+            viewOptions.currentJournalView = newId;
+            
+            saveDataToFirestore().then(() => {
+                logActivity('create_journal', { journalName: journalName.trim() });
+                showToast("Journal created!", "success");
+                updateUI();
+            });
         });
     }
 
@@ -1390,18 +1492,20 @@
         const activeJournal = appData.journals[journalId];
         if (!activeJournal) return;
         const oldName = activeJournal.name;
-        const newName = window.prompt("Enter new name for the journal:", oldName);
-        if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
-        if (isJournalNameTaken(newName, journalId)) {
-            showToast(`A journal named '${newName.trim()}' already exists.`, "error");
-            return;
-        }
-        activeJournal.name = newName.trim();
         
-        saveDataToFirestore(true).then(() => {
-            logActivity('rename_journal', { oldName, newName: newName.trim() });
-            showToast("Journal renamed!", "success");
-            updateUI();
+        showInputModal("Rename Journal", `Enter new name for "${oldName}":`, oldName, (newName) => {
+            if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
+            if (isJournalNameTaken(newName, journalId)) {
+                showToast(`A journal named '${newName.trim()}' already exists.`, "error");
+                return;
+            }
+            activeJournal.name = newName.trim();
+            
+            saveDataToFirestore(true).then(() => {
+                logActivity('rename_journal', { oldName, newName: newName.trim() });
+                showToast("Journal renamed!", "success");
+                updateUI();
+            });
         });
     }
 
@@ -1436,6 +1540,19 @@
             showToast("Error deleting journal. Re-syncing data.", "error");
             loadDataFromFirestore();
         }
+    }
+
+    function undoDelete() {
+        if (!undoCache) return;
+        const { journalId, entry, originalIndex } = undoCache;
+        if (appData.journals[journalId]) {
+            appData.journals[journalId].entries.splice(originalIndex, 0, entry);
+            saveDataToFirestore(true).then(() => {
+                showToast("Entry restored.", "success");
+                logActivity('undo_delete_entry', { narration: entry.narration });
+            });
+        }
+        undoCache = null;
     }
     
     function addEntry(e) {
@@ -1476,7 +1593,30 @@
     
     function updateEntry(e) { e.preventDefault(); const entryId = document.getElementById('editEntryId').value; if (!entryId) return; let entryIndex, journalId; for (const jId in appData.journals) { const index = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (index !== -1) { entryIndex = index; journalId = jId; break; } } if (entryIndex === undefined) return; const formattedDate = assembleAndValidateDate(editDateDayInput, editDateMonthInput, editDateYearInput); if (!formattedDate) return; appData.journals[journalId].entries[entryIndex] = { id: entryId, date: formattedDate, type: document.getElementById('editType').value, method: document.getElementById('editMethod').value, narration: document.getElementById('editNarration').value.trim(), amount: parseFloat(editAmountInput.value.replace(/,/g, '')) || 0 }; saveDataToFirestore(true).then(() => { logActivity('update_entry', { narration: appData.journals[journalId].entries[entryIndex].narration, journalName: appData.journals[journalId].name }); showToast("Entry updated", "success"); }); editEntryModal.classList.add('hidden'); }
     
-    function deleteEntry(entryId) { let journalId; let deletedEntryNarration; for (const jId in appData.journals) { const entryIndex = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (entryIndex > -1) { journalId = jId; deletedEntryNarration = appData.journals[jId].entries[entryIndex].narration; appData.journals[jId].entries.splice(entryIndex, 1); break; } } if (!journalId) return; saveDataToFirestore(true).then(() => { logActivity('delete_entry', { narration: deletedEntryNarration, journalName: appData.journals[journalId].name }); showToast("Entry deleted", "info"); }); }
+    function deleteEntry(entryId) {
+        let journalId, entryIndex, deletedEntry;
+        for (const jId in appData.journals) {
+            const index = appData.journals[jId].entries.findIndex(e => e.id === entryId);
+            if (index > -1) {
+                journalId = jId;
+                entryIndex = index;
+                deletedEntry = { ...appData.journals[jId].entries[index] };
+                break;
+            }
+        }
+        if (!journalId) return;
+
+        undoCache = { journalId, entry: deletedEntry, originalIndex: entryIndex };
+        appData.journals[journalId].entries.splice(entryIndex, 1);
+        
+        saveDataToFirestore(true).then(() => {
+            logActivity('delete_entry', { narration: deletedEntry.narration, journalName: appData.journals[journalId].name });
+            showToast("Entry deleted", "info", {
+                actionText: "Undo",
+                action: undoDelete
+            });
+        });
+    }
     
     function updateBulkDeleteButton() { const count = selectedEntryIds.size; bulkDeleteBtn.textContent = `Delete Selected (${count})`; bulkDeleteBtn.classList.toggle('hidden', count === 0); }
     
@@ -1729,12 +1869,14 @@
     createJournalBtn.addEventListener('click', createNewJournal);
     mergeJournalBtn.addEventListener('click', toggleMergeMode);
     bulkDeleteBtn.addEventListener('click', () => { showConfirmationModal(`Are you sure you want to delete ${selectedEntryIds.size} selected entries? This cannot be undone.`, bulkDeleteEntries); });
-    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { showConfirmationModal("Are you sure you want to delete this entry?", () => deleteEntry(e.target.dataset.id)); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
+    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { deleteEntry(e.target.dataset.id); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
     tableBody.addEventListener('click', handleTableClick);
     recentEntriesBody.addEventListener('click', handleTableClick);
     selectAllCheckbox.addEventListener('change', (e) => { const checkboxes = tableBody.querySelectorAll('.row-checkbox'); checkboxes.forEach(checkbox => { const id = checkbox.dataset.id; checkbox.checked = e.target.checked; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } }); updateBulkDeleteButton(); });
     modalConfirmBtn.addEventListener('click', () => { if (typeof confirmCallback === 'function') { confirmCallback(); confirmCallback = null; } confirmationModal.classList.add('hidden'); });
     modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
+    inputModalForm.addEventListener('submit', (e) => { e.preventDefault(); if (typeof inputConfirmCallback === 'function') { inputConfirmCallback(inputModalField.value); } inputModal.classList.add('hidden'); inputConfirmCallback = null; });
+    inputModalCancelBtn.addEventListener('click', () => { inputModal.classList.add('hidden'); inputConfirmCallback = null; });
     editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden'));
     importBackupBtn.addEventListener('click', () => fileImporter.click());
     fileImporter.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { importedDataCache = JSON.parse(e.target.result); if (importedDataCache && importedDataCache.journals) { importOptionsModal.classList.remove('hidden'); } else { throw new Error("Invalid backup file format."); } } catch (err) { showToast(err.message, "error"); importedDataCache = null; } }; reader.readAsText(file); event.target.value = null; });
