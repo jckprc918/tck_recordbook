@@ -266,9 +266,18 @@
                       </div>
                   </div>
                   <div id="password-auth-error" class="text-red-500 text-sm text-center mb-4"></div>
-                  <div>
+                  <div class="relative">
                       <label for="password" class="sr-only">Password</label>
-                      <input type="password" id="password" placeholder="Enter your password" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
+                      <input type="password" id="password" placeholder="Enter your password" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-3 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
+                      <button type="button" id="toggle-password-btn" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <svg id="eye-open-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <svg id="eye-closed-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      </button>
                   </div>
                   <div class="flex items-center justify-end mt-8">
                       <button type="submit" id="submit-btn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-6 rounded-md shadow-sm transition-all duration-200">Sign In</button>
@@ -286,22 +295,32 @@
   <!-- Main App View -->
   <div id="app-view" class="w-full hidden">
     <header class="sticky top-0 z-50 bg-white shadow-md dark:bg-gray-800/95 dark:backdrop-blur-sm dark:border-b dark:border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-            <div class="flex items-center gap-3">
-                <img src="logo.png" alt="TCK Logo" class="h-12 w-auto">
-                <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100">TCK Record Book</h1>
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-3 flex flex-nowrap items-center justify-between gap-x-2 sm:gap-x-4">
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <img src="logo.png" alt="TCK Logo" class="h-10 sm:h-12 w-auto">
+                <h1 class="text-xl font-bold text-gray-800 dark:text-gray-100 hidden sm:block">TCK Record Book</h1>
             </div>
-            <nav class="w-full md:w-auto md:flex-grow flex justify-center order-3 md:order-2">
-                <div class="flex space-x-2" aria-label="Tabs">
-                    <button id="dashboard-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm bg-orange-500 text-white">Dashboard</button>
-                    <button id="add-entry-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">Add Entry</button>
-                    <button id="management-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">Manage Entries</button>
-                    <!-- START: CHANGE #4 - Renamed tab -->
-                    <button id="data-management-tab-btn" type="button" class="tab-btn whitespace-nowrap py-2 px-4 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">Journals</button>
-                    <!-- END: CHANGE #4 -->
+            <nav class="flex-grow flex justify-center">
+                <div class="flex space-x-1 sm:space-x-2" aria-label="Tabs">
+                    <button id="dashboard-tab-btn" type="button" title="Dashboard" class="tab-btn flex items-center gap-2 whitespace-nowrap py-2 px-3 rounded-md font-medium text-sm bg-orange-500 text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+                        <span class="hidden md:inline">Dashboard</span>
+                    </button>
+                    <button id="add-entry-tab-btn" type="button" title="Add Entry" class="tab-btn flex items-center gap-2 whitespace-nowrap py-2 px-3 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <span class="hidden md:inline">Add Entry</span>
+                    </button>
+                    <button id="management-tab-btn" type="button" title="Manage Entries" class="tab-btn flex items-center gap-2 whitespace-nowrap py-2 px-3 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125A1.125 1.125 0 003 5.625v12.75c0 .621.504 1.125 1.125 1.125z" /></svg>
+                        <span class="hidden md:inline">Manage Entries</span>
+                    </button>
+                    <button id="data-management-tab-btn" type="button" title="Journals" class="tab-btn flex items-center gap-2 whitespace-nowrap py-2 px-3 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+                        <span class="hidden md:inline">Journals</span>
+                    </button>
                 </div>
             </nav>
-            <div class="flex items-center gap-4 order-2 md:order-3">
+            <div class="flex items-center flex-shrink-0 gap-2 sm:gap-4">
                 <button id="theme-toggle-btn" type="button" class="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 dark:focus:ring-offset-gray-800" title="Toggle theme">
                     <svg id="theme-icon-light" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                     <svg id="theme-icon-dark" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
@@ -309,10 +328,14 @@
                 </button>
                 <span id="syncStatus" class="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1"></span>
                 <div class="relative">
-                    <button id="user-menu-button" type="button" class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-600 p-2 rounded-lg hover:bg-orange-50 dark:text-gray-300 dark:hover:bg-gray-700">
+                    <button id="user-menu-button" type="button" class="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-orange-600 p-1 rounded-full hover:bg-orange-50 dark:text-gray-300 dark:hover:bg-gray-700">
+                        <span id="user-role-icon" class="flex-shrink-0">
+                           <svg id="user-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 hidden"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                           <svg id="admin-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 hidden"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286zm0 13.036h.008v.008h-.008v-.008z" /></svg>
+                        </span>
                         <span id="userEmail" class="hidden md:block"></span>
                         <span id="userRoleBadge" class="hidden text-xs font-bold uppercase px-2 py-1 rounded-full"></span>
-                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        <svg class="w-4 h-4 hidden sm:block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     <div id="user-menu" class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dark:bg-gray-800 dark:ring-gray-600" role="menu">
                         <div class="py-1" role="none">
@@ -417,11 +440,11 @@
                             </div>
                             <div>
                               <label for="narration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Category</label>
-                              <input type="text" id="narration" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                              <input type="text" id="narration" list="narration-suggestions" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                             </div>
                             <div>
                               <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (UGX)</label>
-                              <input type="number" id="amount" min="0" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                              <input type="text" id="amount" inputmode="numeric" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                             </div>
                             <button type="submit" id="addEntryBtn" class="mt-3 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50">
                               Add Entry
@@ -614,6 +637,7 @@
                 </div>
             </div>
         </div>
+        <datalist id="narration-suggestions"></datalist>
     </main>
   </div>
 
@@ -682,11 +706,11 @@
                 </div>
                 <div>
                     <label for="editNarration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Category</label>
-                    <input type="text" id="editNarration" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                    <input type="text" id="editNarration" list="narration-suggestions" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                 </div>
                 <div>
                     <label for="editAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (UGX)</label>
-                    <input type="number" id="editAmount" min="0" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                    <input type="text" id="editAmount" inputmode="numeric" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                 </div>
                 <div class="flex justify-end gap-4 mt-4">
                     <button type="button" id="editCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-gray-200">Cancel</button>
@@ -696,7 +720,7 @@
         </div>
     </div>
 
-  <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2"></div>
+  <div id="toast-container" class="fixed bottom-4 right-4 z-[9999] space-y-2"></div>
 
   <button id="app-help-btn" class="help-btn" title="Help">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -750,9 +774,14 @@
     const passwordAuthError = document.getElementById('password-auth-error');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
+    const togglePasswordBtn = document.getElementById('toggle-password-btn');
+    const eyeOpenIcon = document.getElementById('eye-open-icon');
+    const eyeClosedIcon = document.getElementById('eye-closed-icon');
     const signOutBtn = document.getElementById('signOutBtn');
     const userEmailSpan = document.getElementById('userEmail');
     const userRoleBadge = document.getElementById('userRoleBadge');
+    const userIcon = document.getElementById('user-icon');
+    const adminIcon = document.getElementById('admin-icon');
     const userEmailDropdown = document.getElementById('user-email-dropdown');
     const userMenuButton = document.getElementById('user-menu-button');
     const userMenu = document.getElementById('user-menu');
@@ -772,7 +801,7 @@
     const importCancelBtn = document.getElementById('importCancelBtn');
     const mergeJournalBtn = document.getElementById('mergeJournalBtn');
     const mergeStatusMessage = document.getElementById('merge-status-message');
-    const manageJournalSelect = document.getElementById('manage-journal-select'); // TWEAK 3
+    const manageJournalSelect = document.getElementById('manage-journal-select');
     const addEntryBtn = document.getElementById('addEntryBtn');
     const dateDayInput = document.getElementById('date-day');
     const dateMonthInput = document.getElementById('date-month');
@@ -783,6 +812,7 @@
     const methodSelect = document.getElementById('method');
     const narrationInput = document.getElementById('narration');
     const amountInput = document.getElementById('amount');
+    const narrationSuggestions = document.getElementById('narration-suggestions');
     const searchInput = document.getElementById('search-input');
     const sortBySelect = document.getElementById('sort-by');
     const filterTypeSelect = document.getElementById('filter-type');
@@ -800,6 +830,7 @@
     const editDateYearInput = document.getElementById('edit-date-year');
     const editDatePickerBtn = document.getElementById('edit-date-picker-btn');
     const editNativeDatePicker = document.getElementById('edit-native-date-picker');
+    const editAmountInput = document.getElementById('editAmount');
     const recentEntriesBody = document.getElementById('recent-entries-body');
     const dashboardMainContent = document.getElementById('dashboard-main-content');
     const dashboardMessage = document.getElementById('dashboard-message');
@@ -960,16 +991,21 @@
     function updateRoleUI() {
         if (!currentUserProfile) return;
         const isAdmin = currentUserProfile.role === 'admin';
+        
         adminMenuBtn.classList.toggle('hidden', !isAdmin);
         userRoleBadge.classList.toggle('hidden', !isAdmin);
         if(isAdmin) {
           userRoleBadge.textContent = 'Admin';
           userRoleBadge.className = 'text-xs font-bold uppercase px-2 py-1 rounded-full bg-orange-500 text-white';
         }
+        
+        userIcon.classList.toggle('hidden', isAdmin);
+        adminIcon.classList.toggle('hidden', !isAdmin);
+
         [mergeJournalBtn, importBackupBtn].forEach(btn => {
             btn.disabled = !isAdmin;
             btn.title = isAdmin ? '' : 'This feature is for admins only.';
-            btn.classList.toggle('hidden', !isAdmin); // Also hide it
+            btn.classList.toggle('hidden', !isAdmin); 
         });
     }
 
@@ -978,6 +1014,23 @@
     changeEmailBtn.addEventListener('click', () => { passwordStep.classList.add('hidden'); emailStep.classList.remove('hidden'); emailInput.focus(); });
     loginForm.addEventListener('submit', (e) => { e.preventDefault(); const email = emailInput.value; const password = passwordInput.value; signInWithEmailAndPassword(auth, email, password).catch(error => passwordAuthError.textContent = "Invalid credentials. Please try again."); });
     signOutBtn.addEventListener('click', () => { signOut(auth).then(() => { window.location.reload(); }).catch(error => showToast(error.message, 'error')); });
+    emailInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            goToPasswordStep();
+        }
+    });
+    togglePasswordBtn.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeOpenIcon.classList.add('hidden');
+            eyeClosedIcon.classList.remove('hidden');
+        } else {
+            passwordInput.type = 'password';
+            eyeOpenIcon.classList.remove('hidden');
+            eyeClosedIcon.classList.add('hidden');
+        }
+    });
 
     // --- ACTIVITY LOGGING ---
     async function logActivity(action, details = {}) {
@@ -1075,7 +1128,6 @@
         const isLoggedIn = !!currentUser; 
 
         if (!hasJournals) {
-            // This logic is simplified as the new dropdown handles the title
             tableBody.innerHTML = `<tr id="placeholderRow"><td colspan="7" class="text-center py-10 text-gray-500 dark:text-gray-400">${isLoggedIn ? 'Create a journal to get started.' : 'Sign in to manage your journals.'}</td></tr>`;
             [addEntryBtn, downloadBtn, downloadBackupBtn, searchInput].forEach(el => el.disabled = true); 
             createJournalBtn.disabled = !isLoggedIn;
@@ -1087,7 +1139,7 @@
             journalCardsContainer.innerHTML = `<p class="text-sm text-gray-500 dark:text-gray-400 text-center">No journals to display.</p>`;
             dashboardMainContent.classList.add('hidden'); 
             dashboardMessage.classList.remove('hidden');
-            renderTable(); // To render the (empty) dropdown
+            renderTable();
             return; 
         } 
         dashboardMainContent.classList.remove('hidden'); 
@@ -1098,6 +1150,7 @@
         mergeJournalBtn.disabled = Object.keys(appData.journals).length < 2 || !isAdmin;
         importBackupBtn.disabled = !isAdmin;
         
+        populateNarrationSuggestions();
         renderJournalCards(); 
         setActiveJournalView(viewOptions.currentJournalView); 
     }
@@ -1107,7 +1160,6 @@
         const journals = appData.journals || {}; 
         const sortedIds = Object.keys(journals).sort((a, b) => journals[a].name.localeCompare(journals[b].name)); 
         
-        // START: CHANGE #2 - Logic to show/hide "All Journals" card
         const isManageTabActive = !tabContents.manage.classList.contains('hidden');
         if (isManageTabActive) {
             const allCard = document.createElement('div');
@@ -1118,7 +1170,6 @@
             if(isMergeModeActive) allCard.classList.add('disabled-card'); 
             journalCardsContainer.appendChild(allCard); 
         }
-        // END: CHANGE #2
         
         const isAdmin = currentUserProfile?.role === 'admin';
         
@@ -1150,9 +1201,8 @@
         });
     }
 
-    // START: TWEAK 3 - New function to render the journal selector dropdown
     function renderManageJournalSelector() {
-        if (!manageJournalSelect) return; // Guard clause if element doesn't exist
+        if (!manageJournalSelect) return; 
         const wasFocused = document.activeElement === manageJournalSelect;
         const journals = appData.journals || {};
         const hasJournals = Object.keys(journals).length > 0;
@@ -1164,19 +1214,16 @@
             const sortedIds = Object.keys(journals).sort((a, b) => journals[a].name.localeCompare(journals[b].name));
             optionsHTML += sortedIds.map(id => {
                 const journal = journals[id];
-                // Use selected attribute to preserve selection during re-renders
                 const isSelected = id === viewOptions.currentJournalView ? 'selected' : '';
                 return `<option value="${id}" ${isSelected}>${journal.name}</option>`;
             }).join('');
         }
         manageJournalSelect.innerHTML = optionsHTML;
         
-        // Ensure dropdown reflects the current view
         manageJournalSelect.value = viewOptions.currentJournalView;
         
-        if (wasFocused) manageJournalSelect.focus(); // Restore focus if it was there before re-render
+        if (wasFocused) manageJournalSelect.focus();
     }
-    // END: TWEAK 3
 
     function setActiveJournalView(journalId, isUserAction = false) {
         viewOptions.currentJournalView = journalId;
@@ -1202,18 +1249,12 @@
             addEntryBtn.disabled = false;
         } 
         
-        // START: TWEAK 1 - Make date persistent on Add Entry form
-        // Only set date to today if the input is empty, to preserve it across entries.
         if (!dateDayInput.value || !dateMonthInput.value || !dateYearInput.value) {
             const today = new Date();
             dateDayInput.value = String(today.getDate()).padStart(2, '0');
             dateMonthInput.value = String(today.getMonth() + 1).padStart(2, '0');
             dateYearInput.value = today.getFullYear();
         }
-        // END: TWEAK 1
-        
-        // This line is no longer needed due to the dropdown
-        // entriesTitle.textContent = `Entries for: ${title}`; 
         
         resetAllFilters();
     }
@@ -1231,7 +1272,7 @@
     function updateFilteredSummary(filteredEntries) { const income = filteredEntries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0); const expense = filteredEntries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0); const net = income - expense; filteredIncomeEl.textContent = `UGX ${income.toLocaleString()}`; filteredExpenseEl.textContent = `UGX ${expense.toLocaleString()}`; filteredNetEl.textContent = `UGX ${net.toLocaleString()}`; filteredNetEl.className = `text-lg font-bold ${net >= 0 ? 'text-blue-800 dark:text-blue-400' : 'text-red-600 dark:text-red-500'}`; }
     
     function renderTable() { 
-        renderManageJournalSelector(); // TWEAK 3 - Render dropdown
+        renderManageJournalSelector(); 
         renderDashboard(); 
         renderRecentEntriesPreview(); 
         const allFilteredEntries = getFilteredEntries(); 
@@ -1300,6 +1341,28 @@
     
     function resetAllFilters() { sortBySelect.value = 'date_desc'; filterTypeSelect.value = 'all'; filterMethodSelect.value = 'all'; searchInput.value = ''; startDateInput.value = ''; endDateInput.value = ''; viewOptions.sortBy = 'date_desc'; viewOptions.filterByType = 'all'; viewOptions.filterByMethod = 'all'; viewOptions.searchTerm = ''; viewOptions.startDate = null; viewOptions.endDate = null; viewOptions.currentPage = 1; selectedEntryIds.clear(); renderTable(); }
 
+    function populateNarrationSuggestions() {
+        if (!appData.journals) return;
+        const suggestions = new Set();
+        Object.values(appData.journals).forEach(journal => {
+            (journal.entries || []).forEach(entry => {
+                if (entry.narration) suggestions.add(entry.narration);
+            });
+        });
+        narrationSuggestions.innerHTML = [...suggestions].map(s => `<option value="${s}"></option>`).join('');
+    }
+
+    function formatAmountInput(input) {
+        let value = input.value;
+        let numericValue = value.replace(/[^0-9]/g, '');
+        if (numericValue) {
+            input.value = parseInt(numericValue, 10).toLocaleString('en-US');
+        } else {
+            input.value = '';
+        }
+    }
+
+
     // --- CRUD & JOURNAL MANAGEMENT ---
     function isJournalNameTaken(name, excludingId = null) { const lowerCaseName = name.trim().toLowerCase(); for (const id in appData.journals) { if (id === excludingId) continue; if (appData.journals[id].name.toLowerCase() === lowerCaseName) { return true; } } return false; }
     
@@ -1319,7 +1382,7 @@
         saveDataToFirestore().then(() => {
             logActivity('create_journal', { journalName: journalName.trim() });
             showToast("Journal created!", "success");
-            updateUI(); // Update UI after successful save
+            updateUI();
         });
     }
 
@@ -1338,7 +1401,7 @@
         saveDataToFirestore(true).then(() => {
             logActivity('rename_journal', { oldName, newName: newName.trim() });
             showToast("Journal renamed!", "success");
-            updateUI(); // Update UI after successful save
+            updateUI();
         });
     }
 
@@ -1347,8 +1410,6 @@
         if (!journalId || !journalToDelete) return;
 
         const journalName = journalToDelete.name;
-
-        // Optimistically update local state for immediate UI feedback
         delete appData.journals[journalId];
 
         if (appData.activeJournalId === journalId || viewOptions.currentJournalView === journalId) {
@@ -1358,7 +1419,7 @@
             viewOptions.currentJournalView = newActiveId;
         }
         
-        updateUI(); // Rerender UI based on the new local state
+        updateUI();
 
         try {
             const orgDocRef = doc(db, "organizations", currentUserProfile.organizationId);
@@ -1373,11 +1434,10 @@
         } catch (error) {
             console.error("Error deleting journal from Firestore: ", error);
             showToast("Error deleting journal. Re-syncing data.", "error");
-            loadDataFromFirestore(); // Re-sync with Firestore on failure
+            loadDataFromFirestore();
         }
     }
     
-    // START: CHANGE #3 - Ensured persistence logic is correct
     function addEntry(e) {
         e.preventDefault();
         const activeJournalId = viewOptions.currentJournalView;
@@ -1395,7 +1455,7 @@
             type: typeSelect.value,
             method: methodSelect.value,
             narration: narrationInput.value.trim(),
-            amount: parseFloat(amountInput.value)
+            amount: parseFloat(amountInput.value.replace(/,/g, '')) || 0
         };
 
         if (!activeJournal.entries) activeJournal.entries = [];
@@ -1405,18 +1465,16 @@
             logActivity('create_entry', { narration: newEntry.narration, amount: newEntry.amount, type: newEntry.type, journalName: activeJournal.name });
             showToast("Entry added", "success");
             
-            // Only clear narration and amount. The other fields (date, type, method) will persist.
             narrationInput.value = '';
             amountInput.value = '';
             
             narrationInput.focus();
         });
     }
-    // END: CHANGE #3
     
-    function openEditModal(entryId) { let entry, journalId; for (const jId in appData.journals) { const foundEntry = appData.journals[jId].entries.find(e => e.id === entryId); if (foundEntry) { entry = foundEntry; journalId = jId; break; } } if (!entry) return; document.getElementById('editEntryId').value = entry.id; const [year, month, day] = entry.date.split('-'); editDateDayInput.value = day; editDateMonthInput.value = month; editDateYearInput.value = year; document.getElementById('editType').value = entry.type; document.getElementById('editMethod').value = entry.method; document.getElementById('editNarration').value = entry.narration; document.getElementById('editAmount').value = entry.amount; editEntryModal.classList.remove('hidden'); }
+    function openEditModal(entryId) { let entry, journalId; for (const jId in appData.journals) { const foundEntry = appData.journals[jId].entries.find(e => e.id === entryId); if (foundEntry) { entry = foundEntry; journalId = jId; break; } } if (!entry) return; document.getElementById('editEntryId').value = entry.id; const [year, month, day] = entry.date.split('-'); editDateDayInput.value = day; editDateMonthInput.value = month; editDateYearInput.value = year; document.getElementById('editType').value = entry.type; document.getElementById('editMethod').value = entry.method; document.getElementById('editNarration').value = entry.narration; editAmountInput.value = (entry.amount || 0).toLocaleString('en-US'); editEntryModal.classList.remove('hidden'); }
     
-    function updateEntry(e) { e.preventDefault(); const entryId = document.getElementById('editEntryId').value; if (!entryId) return; let entryIndex, journalId; for (const jId in appData.journals) { const index = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (index !== -1) { entryIndex = index; journalId = jId; break; } } if (entryIndex === undefined) return; const formattedDate = assembleAndValidateDate(editDateDayInput, editDateMonthInput, editDateYearInput); if (!formattedDate) return; appData.journals[journalId].entries[entryIndex] = { id: entryId, date: formattedDate, type: document.getElementById('editType').value, method: document.getElementById('editMethod').value, narration: document.getElementById('editNarration').value.trim(), amount: parseFloat(document.getElementById('editAmount').value) }; saveDataToFirestore(true).then(() => { logActivity('update_entry', { narration: appData.journals[journalId].entries[entryIndex].narration, journalName: appData.journals[journalId].name }); showToast("Entry updated", "success"); }); editEntryModal.classList.add('hidden'); }
+    function updateEntry(e) { e.preventDefault(); const entryId = document.getElementById('editEntryId').value; if (!entryId) return; let entryIndex, journalId; for (const jId in appData.journals) { const index = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (index !== -1) { entryIndex = index; journalId = jId; break; } } if (entryIndex === undefined) return; const formattedDate = assembleAndValidateDate(editDateDayInput, editDateMonthInput, editDateYearInput); if (!formattedDate) return; appData.journals[journalId].entries[entryIndex] = { id: entryId, date: formattedDate, type: document.getElementById('editType').value, method: document.getElementById('editMethod').value, narration: document.getElementById('editNarration').value.trim(), amount: parseFloat(editAmountInput.value.replace(/,/g, '')) || 0 }; saveDataToFirestore(true).then(() => { logActivity('update_entry', { narration: appData.journals[journalId].entries[entryIndex].narration, journalName: appData.journals[journalId].name }); showToast("Entry updated", "success"); }); editEntryModal.classList.add('hidden'); }
     
     function deleteEntry(entryId) { let journalId; let deletedEntryNarration; for (const jId in appData.journals) { const entryIndex = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (entryIndex > -1) { journalId = jId; deletedEntryNarration = appData.journals[jId].entries[entryIndex].narration; appData.journals[jId].entries.splice(entryIndex, 1); break; } } if (!journalId) return; saveDataToFirestore(true).then(() => { logActivity('delete_entry', { narration: deletedEntryNarration, journalName: appData.journals[journalId].name }); showToast("Entry deleted", "info"); }); }
     
@@ -1544,21 +1602,16 @@
     const handleTabSwitch = (activeTabKey) => { 
         if (tour && tour.isActive()) { tour.cancel(); } 
         
-        // START: TWEAK 2 - Reset dashboard range when switching away
         if (activeTabKey !== 'dashboard') {
             viewOptions.dashboardDateRange = 'month';
         }
-        // END: TWEAK 2
 
-        // START: CHANGE #2 - Revert from "All Journals" view if not on Manage tab
-        // This also handles the revert for Tweak 3
         if (activeTabKey !== 'manage' && viewOptions.currentJournalView === 'all') { 
             const journalToRestore = lastActiveSingleJournalId || (Object.keys(appData.journals || {})[0]); 
             if (journalToRestore) { 
                 setActiveJournalView(journalToRestore); 
             }
         }
-        // END: CHANGE #2
 
         if(isMergeModeActive) { toggleMergeMode(); } 
         
@@ -1579,14 +1632,11 @@
             loadUserActivities();
         }
 
-        // START: CHANGE #1 - Disable "All Time" button when not on Dashboard
         const allTimeBtn = document.querySelector('.kpi-range-btn[data-range="all"]');
         if (allTimeBtn) {
             allTimeBtn.disabled = activeTabKey !== 'dashboard';
         }
-        // END: CHANGE #1
 
-        // START: CHANGE #2 - Toggle visibility of bulk selection UI
         const bulkDeleteWrapper = document.getElementById('bulk-delete-wrapper');
         const entriesTable = document.getElementById('entriesTable');
         if (bulkDeleteWrapper) {
@@ -1596,7 +1646,6 @@
             entriesTable.classList.toggle('selection-hidden', activeTabKey !== 'manage');
         }
         
-        // Re-render journal cards to show/hide "All Journals" option
         if(activeTabKey === 'data' || activeTabKey === 'manage') {
             renderJournalCards();
         }
@@ -1606,7 +1655,6 @@
             updateBulkDeleteButton();
             if (selectAllCheckbox) selectAllCheckbox.checked = false;
         }
-        // END: CHANGE #2
     };
     Object.keys(tabButtons).forEach(key => { tabButtons[key].addEventListener('click', () => handleTabSwitch(key)); });
     adminMenuBtn.addEventListener('click', () => { handleTabSwitch('admin'); userMenu.classList.add('hidden'); });
@@ -1637,6 +1685,8 @@
     function setupDateInputListeners(dayEl, monthEl, yearEl, pickerBtn, nativePicker) { dayEl.addEventListener('input', () => enforceMinMax(dayEl)); monthEl.addEventListener('input', () => enforceMinMax(monthEl)); yearEl.addEventListener('input', () => { if (yearEl.value.length > 4) { yearEl.value = yearEl.value.slice(0, 4); } }); dayEl.addEventListener('keyup', () => { if (dayEl.value.length === 2) monthEl.focus(); }); monthEl.addEventListener('keyup', () => { if (monthEl.value.length === 2) yearEl.focus(); }); pickerBtn.addEventListener('click', () => { try { nativePicker.showPicker(); } catch (error) { showToast("Your browser doesn't support this feature.", "error"); } }); nativePicker.addEventListener('change', (e) => { if (e.target.value) { const [year, month, day] = e.target.value.split('-'); dayEl.value = day; monthEl.value = month; yearEl.value = year; } }); }
     setupDateInputListeners(dateDayInput, dateMonthInput, dateYearInput, datePickerBtn, nativeDatePicker);
     setupDateInputListeners(editDateDayInput, editDateMonthInput, editDateYearInput, editDatePickerBtn, editNativeDatePicker);
+    amountInput.addEventListener('input', () => formatAmountInput(amountInput));
+    editAmountInput.addEventListener('input', () => formatAmountInput(editAmountInput));
     searchInput.addEventListener('input', (e) => { viewOptions.searchTerm = e.target.value; viewOptions.currentPage = 1; renderTable(); });
     [sortBySelect, filterTypeSelect, filterMethodSelect].forEach(el => { el.addEventListener('change', () => { viewOptions.sortBy = sortBySelect.value; viewOptions.filterByType = filterTypeSelect.value; viewOptions.filterByMethod = filterMethodSelect.value; viewOptions.currentPage = 1; renderTable(); }); });
     filterByDateBtn.addEventListener('click', () => { viewOptions.startDate = startDateInput.value; viewOptions.endDate = endDateInput.value; viewOptions.currentPage = 1; renderTable(); });
@@ -1664,16 +1714,14 @@
             setActiveJournalView(journalId, true); 
         } else if (isRenameAction) { 
             renameActiveJournal(journalId); 
-        } else if (isDeleteAction && isAdmin) { // Extra check for safety
+        } else if (isDeleteAction && isAdmin) { 
             const name = appData.journals[journalId]?.name;
             if (name) showConfirmationModal(`Delete '${name}' and all its entries? This cannot be undone.`, () => deleteActiveJournal(journalId)); 
         } 
     });
-    // START: TWEAK 3 - Event listener for the new dropdown
     manageJournalSelect.addEventListener('change', (e) => {
         setActiveJournalView(e.target.value, true);
     });
-    // END: TWEAK 3
     prevPageBtn.addEventListener('click', () => { if (viewOptions.currentPage > 1) { viewOptions.currentPage--; renderTable(); } });
     nextPageBtn.addEventListener('click', () => { viewOptions.currentPage++; renderTable(); });
     entryForm.addEventListener('submit', addEntry);
