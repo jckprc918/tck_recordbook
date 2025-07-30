@@ -60,6 +60,16 @@
     }
     .toast { animation: toast-in 0.5s ease-out forwards; }
     .toast.fading-out { animation: toast-out 0.5s ease-in forwards; }
+    @keyframes slide-up {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+    }
+    @keyframes slide-down {
+        from { transform: translateY(0); }
+        to { transform: translateY(100%); }
+    }
+    .undo-bar.show { animation: slide-up 0.5s ease-out forwards; }
+    .undo-bar.hide { animation: slide-down 0.5s ease-in forwards; }
     .chart-btn.active, .kpi-range-btn.active {
         background-color: #f97316; /* TCK Orange */
         color: white;
@@ -456,7 +466,7 @@
                          <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-gray-800">
                             <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Recent Entries</h2>
-                                <button id="undo-btn" class="hidden bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-1 px-3 rounded-lg text-xs dark:bg-blue-900/50 dark:hover:bg-blue-900/80 dark:text-blue-200">Undo</button>
+                               
                             </div>
                             <div class="overflow-y-auto" style="max-height: 28rem;">
                                 <table id="recentEntriesTable" class="min-w-full text-sm">
@@ -642,6 +652,13 @@
         </div>
         <datalist id="narration-suggestions"></datalist>
     </main>
+
+    <div id="undo-bar" class="undo-bar fixed bottom-0 left-0 right-0 p-4 bg-gray-800 text-white dark:bg-gray-700 shadow-lg hidden">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <span>Entry deleted.</span>
+            <button id="undo-action-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm">Undo</button>
+        </div>
+    </div>
   </div>
 
   <div id="confirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
@@ -855,7 +872,8 @@
     const editNativeDatePicker = document.getElementById('edit-native-date-picker');
     const editAmountInput = document.getElementById('editAmount');
     const recentEntriesBody = document.getElementById('recent-entries-body');
-    const undoBtn = document.getElementById('undo-btn');
+    const undoBar = document.getElementById('undo-bar');
+    const undoActionBtn = document.getElementById('undo-action-btn');
     const dashboardMainContent = document.getElementById('dashboard-main-content');
     const dashboardMessage = document.getElementById('dashboard-message');
     const dashboardTitle = document.getElementById('dashboard-title');
@@ -1574,7 +1592,8 @@
                 logActivity('undo_delete_entry', { narration: entry.narration });
             });
         }
-        undoBtn.classList.add('hidden');
+        undoBar.classList.remove('show');
+        undoBar.classList.add('hide');
         clearTimeout(undoTimeout);
         undoCache = null;
     }
@@ -1635,10 +1654,12 @@
         
         saveDataToFirestore(true).then(() => {
             logActivity('delete_entry', { narration: deletedEntry.narration, journalName: appData.journals[journalId].name });
-            undoBtn.classList.remove('hidden');
+            undoBar.classList.remove('hidden', 'hide');
+            undoBar.classList.add('show');
             clearTimeout(undoTimeout);
             undoTimeout = setTimeout(() => {
-                undoBtn.classList.add('hidden');
+                undoBar.classList.remove('show');
+                undoBar.classList.add('hide');
                 undoCache = null; 
             }, 7000); 
         });
@@ -1769,7 +1790,8 @@
         if (tour && tour.isActive()) { tour.cancel(); } 
         
         clearTimeout(undoTimeout);
-        undoBtn.classList.add('hidden');
+        undoBar.classList.remove('show');
+        undoBar.classList.add('hide');
         undoCache = null;
 
         if (activeTabKey !== 'dashboard') {
@@ -1907,7 +1929,7 @@
     modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
     inputModalForm.addEventListener('submit', (e) => { e.preventDefault(); if (typeof inputConfirmCallback === 'function') { inputConfirmCallback(inputModalField.value); } inputModal.classList.add('hidden'); inputConfirmCallback = null; });
     inputModalCancelBtn.addEventListener('click', () => { inputModal.classList.add('hidden'); inputConfirmCallback = null; });
-    undoBtn.addEventListener('click', undoDelete);
+    undoActionBtn.addEventListener('click', undoDelete);
     editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden'));
     importBackupBtn.addEventListener('click', () => fileImporter.click());
     fileImporter.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { importedDataCache = JSON.parse(e.target.result); if (importedDataCache && importedDataCache.journals) { importOptionsModal.classList.remove('hidden'); } else { throw new Error("Invalid backup file format."); } } catch (err) { showToast(err.message, "error"); importedDataCache = null; } }; reader.readAsText(file); event.target.value = null; });
