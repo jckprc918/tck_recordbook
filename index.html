@@ -231,6 +231,30 @@
     #entriesTable.selection-hidden > tbody > tr > td:first-child {
         display: none;
     }
+
+    /* START: UNDO TOAST STYLES */
+    @keyframes slide-in-bottom {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes slide-out-bottom {
+      from { transform: translateY(0); opacity: 1; }
+      to { transform: translateY(100%); opacity: 0; }
+    }
+    .undo-toast-container {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 33.333333%;
+        z-index: 10000;
+        animation: slide-in-bottom 0.5s ease-out forwards;
+    }
+    .undo-toast-container.fading-out {
+        animation: slide-out-bottom 0.5s ease-in forwards;
+    }
+    /* END: UNDO TOAST STYLES */
+
   </style>
 </head>
 <body class="bg-gray-100 dark:bg-[#0D1117] min-h-screen font-sans">
@@ -445,7 +469,7 @@
                               </select>
                             </div>
                             <div>
-                              <label for="narration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Category</label>
+                              <label for="narration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Details</label>
                               <input type="text" id="narration" list="narration-suggestions" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
                             </div>
                             <div>
@@ -646,7 +670,10 @@
             <!-- START: NEW REPORTS PAGE (ADMIN ONLY) -->
             <div id="reports-content-container" class="hidden">
                 <div class="flex justify-between items-center flex-wrap gap-4 mb-6">
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Advanced Reports</h2>
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Advanced Reports</h2>
+                         <select id="reports-journal-select" class="hidden rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white"></select>
+                    </div>
                     <div class="flex items-center gap-3">
                          <label for="reports-year-select" class="text-sm font-medium text-gray-700 dark:text-gray-300">Year:</label>
                          <select id="reports-year-select" class="rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white"></select>
@@ -664,9 +691,9 @@
                         <!-- Spending by Category -->
                         <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-[#161B22]">
                             <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Spending by Category Over Time</h3>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">Spending by Narration Over Time</h3>
                                 <select id="reports-category-select" class="rounded-lg border-gray-300 shadow-sm p-2 text-xs focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white">
-                                    <option value="">Select Category</option>
+                                    <option value="">Select Narration</option>
                                 </select>
                             </div>
                             <div class="h-80"><canvas id="categorySpendChart"></canvas></div>
@@ -765,7 +792,7 @@
                     </select>
                 </div>
                 <div>
-                    <label for="editNarration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Category</label>
+                    <label for="editNarration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Details</label>
                     <input type="text" id="editNarration" list="narration-suggestions" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
                 </div>
                 <div>
@@ -780,7 +807,43 @@
         </div>
     </div>
 
+    <!-- START: NEW JOURNAL MANAGEMENT MODALS -->
+    <div id="createJournalModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 dark:bg-[#161B22]">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Create New Journal</h3>
+            <form id="createJournalForm">
+                <div>
+                    <label for="newJournalName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Journal Name</label>
+                    <input type="text" id="newJournalName" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
+                </div>
+                <div class="flex justify-end gap-4 mt-6">
+                    <button type="button" id="createJournalCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Cancel</button>
+                    <button type="submit" class="px-6 py-2 rounded-lg bg-lime-600 hover:bg-lime-700 text-white font-semibold transition-colors">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="renameJournalModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 dark:bg-[#161B22]">
+            <h3 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Rename Journal</h3>
+            <form id="renameJournalForm">
+                <input type="hidden" id="renameJournalId">
+                <div>
+                    <label for="renameJournalName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">New Journal Name</label>
+                    <input type="text" id="renameJournalName" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
+                </div>
+                <div class="flex justify-end gap-4 mt-6">
+                    <button type="button" id="renameJournalCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Cancel</button>
+                    <button type="submit" class="px-6 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors">Rename</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- END: NEW JOURNAL MANAGEMENT MODALS -->
+
   <div id="toast-container" class="fixed bottom-4 right-4 z-[9999] space-y-2"></div>
+  <div id="undo-toast-wrapper"></div> <!-- Wrapper for the undo toast -->
 
   <button id="app-help-btn" class="help-btn" title="Help">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -924,8 +987,20 @@
     const tabButtons = { dashboard: document.getElementById('dashboard-tab-btn'), add: document.getElementById('add-entry-tab-btn'), manage: document.getElementById('management-tab-btn'), data: document.getElementById('data-management-tab-btn'), reports: document.getElementById('reports-tab-btn') };
     const tabContents = { dashboard: document.getElementById('dashboard-content-container'), add: document.getElementById('add-entry-content-container'), manage: document.getElementById('management-content-container'), data: document.getElementById('data-management-content-container'), admin: document.getElementById('admin-content-container'), reports: document.getElementById('reports-content-container') };
     const activityLogContainer = document.getElementById('activity-log-container');
+    // START: JOURNAL MODAL REFS
+    const createJournalModal = document.getElementById('createJournalModal');
+    const createJournalForm = document.getElementById('createJournalForm');
+    const newJournalNameInput = document.getElementById('newJournalName');
+    const createJournalCancelBtn = document.getElementById('createJournalCancelBtn');
+    const renameJournalModal = document.getElementById('renameJournalModal');
+    const renameJournalForm = document.getElementById('renameJournalForm');
+    const renameJournalIdInput = document.getElementById('renameJournalId');
+    const renameJournalNameInput = document.getElementById('renameJournalName');
+    const renameJournalCancelBtn = document.getElementById('renameJournalCancelBtn');
+    // END: JOURNAL MODAL REFS
     // START: REPORTS PAGE REFS
     const reportsContentContainer = document.getElementById('reports-content-container');
+    const reportsJournalSelect = document.getElementById('reports-journal-select');
     const reportsYearSelect = document.getElementById('reports-year-select');
     const reportsCategorySelect = document.getElementById('reports-category-select');
     const reportsMainContent = document.getElementById('reports-main-content');
@@ -942,7 +1017,7 @@
     let isMergeModeActive = false, mergeDestinationId = null;
     let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month', reportsSelectedYear: new Date().getFullYear().toString(), reportsSelectedCategory: '' };
     let selectedEntryIds = new Set();
-    let syncTimeout, inactivityTimer, tour;
+    let syncTimeout, inactivityTimer, tour, undoCache = null, undoTimer = null;
     
     // --- THEME MANAGEMENT ---
     const applyTheme = () => {
@@ -996,8 +1071,39 @@
     function getFormattedDate(date, format = 'dd/mm/yyyy') { if (!date) return ''; const d = new Date(date); const userTimezoneOffset = d.getTimezoneOffset() * 60000; const adjustedDate = new Date(d.getTime() + userTimezoneOffset); const yyyy = adjustedDate.getFullYear(); const mm = String(adjustedDate.getMonth() + 1).padStart(2, '0'); const dd = String(adjustedDate.getDate()).padStart(2, '0'); if (format === 'yyyy-mm-dd') { return `${yyyy}-${mm}-${dd}`; } return `${dd}/${mm}/${yyyy}`; }
     function getIntervalKey(date, interval) { const year = date.getFullYear(); const month = date.getMonth(); if (interval === 'quarter') { const quarter = Math.floor(month / 3) + 1; return `${year}-Q${quarter}`; } if (interval === 'month') { return `${year}-${String(month + 1).padStart(2, '0')}`; } return date.toLocaleDateString('en-CA'); }
     function formatAmountForDashboard(amount) { if (amount == null) return 'UGX 0'; const sign = amount < 0 ? "-" : ""; const absAmount = Math.abs(amount); let formattedValue; if (absAmount >= 1000000) { const millions = absAmount / 1000000; formattedValue = (Math.round(millions * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + 'M'; } else { formattedValue = absAmount.toLocaleString(); } return `${sign}UGX ${formattedValue}`; }
-    let pyodideReadyPromise;
-    async function loadPy() { if (!pyodideReadyPromise) { statusMessage.textContent = 'Initializing Excel exporter...'; pyodideReadyPromise = loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/" }).then(async (pyodide) => { statusMessage.textContent = 'Loading libraries...'; await pyodide.loadPackage(['micropip']); const micropip = pyodide.pyimport("micropip"); await micropip.install('openpyxl==3.1.2'); statusMessage.textContent = ''; return pyodide; }); } return pyodideReadyPromise; }
+    let pyodide = null;
+    let pyodideLoadingPromise = null;
+
+    async function loadPy() {
+        if (pyodide) { return pyodide; }
+        if (pyodideLoadingPromise) { return pyodideLoadingPromise; }
+
+        pyodideLoadingPromise = (async () => {
+            statusMessage.textContent = 'Initializing Excel exporter...';
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'Preparing...';
+
+            try {
+                const loadedPyodide = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/" });
+                statusMessage.textContent = 'Loading libraries...';
+                await loadedPyodide.loadPackage(['micropip']);
+                const micropip = loadedPyodide.pyimport("micropip");
+                await micropip.install('openpyxl==3.1.2');
+                pyodide = loadedPyodide;
+                statusMessage.textContent = '';
+                return pyodide;
+            } catch (error) {
+                console.error("Pyodide loading failed:", error);
+                showToast("Failed to load Excel library.", "error");
+                throw error;
+            } finally {
+                downloadBtn.disabled = getFilteredEntries().length === 0;
+                downloadBtn.textContent = 'Download Excel';
+                pyodideLoadingPromise = null;
+            }
+        })();
+        return pyodideLoadingPromise;
+    }
     
     // --- AUTHENTICATION & ROLE MANAGEMENT ---
     onAuthStateChanged(auth, async (user) => {
@@ -1019,7 +1125,6 @@
             updateRoleUI();
             
             loadDataFromFirestore();
-            loadPy();
             setupInactivityListeners();
         } else {
             currentUser = null;
@@ -1141,6 +1246,9 @@
         unsubscribeFromFirestore = onSnapshot(orgDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 appData = docSnap.data();
+                if (!appData.organizationSettings) {
+                    appData.organizationSettings = { categories: ['Salary', 'Rent', 'Groceries', 'Utilities', 'Transport', 'Entertainment'] };
+                }
                 const journalIds = Object.keys(appData.journals || {});
                 let initialView = viewOptions.currentJournalView; // Keep current view
                 if (!journalIds.includes(initialView) && initialView !== 'all') {
@@ -1166,7 +1274,10 @@
             journals: {
                 [firstJournalId]: { name: "Main Journal", entries: [], lastModified: new Date().toISOString() }
             },
-            activeJournalId: firstJournalId
+            activeJournalId: firstJournalId,
+            organizationSettings: {
+                categories: ['Salary', 'Rent', 'Groceries', 'Utilities', 'Transport', 'Entertainment']
+            }
         };
         logActivity('initialize_organization');
     }
@@ -1446,7 +1557,7 @@
         const selectedYear = parseInt(viewOptions.reportsSelectedYear, 10);
         const prevYear = selectedYear - 1;
 
-        // Always get entries from all journals for the reports page.
+        // Always use all journals for reports
         const entriesToFilter = Object.values(appData.journals || {}).flatMap(j => j.entries || []);
 
         const currentYearEntries = entriesToFilter.filter(e => e && e.date && new Date(e.date).getFullYear() === selectedYear);
@@ -1521,7 +1632,7 @@
             ctx.textBaseline = 'middle';
             ctx.fillStyle = textColor;
             ctx.font = '14px "Inter", sans-serif';
-            ctx.fillText('Select a category to view its trend.', categorySpendChartCanvas.width / 2, categorySpendChartCanvas.height / 2);
+            ctx.fillText('Select a narration to view its trend.', categorySpendChartCanvas.width / 2, categorySpendChartCanvas.height / 2);
             ctx.restore();
             return;
         }
@@ -1586,31 +1697,28 @@
             `;
         }).join('');
     }
-    
+
     function populateReportsYearSelect() {
-        // Always scan all journals to populate the year selector for the reports page.
         const entriesToScan = Object.values(appData.journals || {}).flatMap(j => j.entries || []);
-        const years = [...new Set(entriesToScan.map(e => new Date(e.date).getFullYear()))].sort((a, b) => b - a);
+        const years = [...new Set(entriesToScan.map(e => new Date(e.date).getFullYear()))].sort((a,b) => b-a);
         
         reportsYearSelect.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
         if (years.length === 0) {
             const currentYear = new Date().getFullYear();
             reportsYearSelect.innerHTML = `<option value="${currentYear}">${currentYear}</option>`;
-            reportsYearSelect.value = currentYear;
         }
-        // Ensure the select reflects the current view option, or defaults to the latest year
-        if (years.includes(parseInt(viewOptions.reportsSelectedYear))) {
-            reportsYearSelect.value = viewOptions.reportsSelectedYear;
-        } else if (years.length > 0) {
-            viewOptions.reportsSelectedYear = years[0].toString();
-            reportsYearSelect.value = viewOptions.reportsSelectedYear;
+        // Ensure the view option is valid or default it
+        if (!years.includes(parseInt(viewOptions.reportsSelectedYear))) {
+            viewOptions.reportsSelectedYear = years[0] || new Date().getFullYear().toString();
         }
+        reportsYearSelect.value = viewOptions.reportsSelectedYear;
     }
 
     function populateReportsCategorySelect() {
         const entries = getEntriesForSelectedReportYear();
         const expenseCategories = [...new Set(entries.filter(e => e.type === 'Expense').map(e => e.narration))].sort();
-        reportsCategorySelect.innerHTML = '<option value="">Select Category</option>' + expenseCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+        reportsCategorySelect.innerHTML = '<option value="">Select Narration</option>' + expenseCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+        viewOptions.reportsSelectedCategory = expenseCategories.includes(viewOptions.reportsSelectedCategory) ? viewOptions.reportsSelectedCategory : "";
         reportsCategorySelect.value = viewOptions.reportsSelectedCategory;
     }
 
@@ -1625,8 +1733,8 @@
         populateReportsYearSelect();
         populateReportsCategorySelect();
         
-        const entries = getEntriesForSelectedReportYear();
-        if (entries.length === 0 && getEntriesForReportYears().prevYearEntries.length === 0) {
+        const { currentYearEntries, prevYearEntries } = getEntriesForReportYears();
+        if (currentYearEntries.length === 0 && prevYearEntries.length === 0) {
             reportsMainContent.classList.add('hidden');
             reportsMessage.classList.remove('hidden');
             reportsMessage.textContent = "No data available for the selected year.";
@@ -1648,13 +1756,13 @@
     // --- CRUD & JOURNAL MANAGEMENT ---
     function isJournalNameTaken(name, excludingId = null) { const lowerCaseName = name.trim().toLowerCase(); for (const id in appData.journals) { if (id === excludingId) continue; if (appData.journals[id].name.toLowerCase() === lowerCaseName) { return true; } } return false; }
     
-    function createNewJournal() {
-        const journalName = window.prompt("Enter a name for the new journal:", "New Journal");
+    function createNewJournal(journalName) {
         if (!journalName || journalName.trim() === '') return;
         if (isJournalNameTaken(journalName)) {
             showToast(`A journal named '${journalName.trim()}' already exists.`, "error");
             return;
         }
+        createJournalModal.classList.add('hidden');
         const newId = `journal_${Date.now()}`;
         if (!appData.journals) appData.journals = {};
         appData.journals[newId] = { name: journalName.trim(), entries: [], lastModified: new Date().toISOString() };
@@ -1668,16 +1776,16 @@
         });
     }
 
-    function renameActiveJournal(journalId) {
+    function renameActiveJournal(journalId, newName) {
         const activeJournal = appData.journals[journalId];
         if (!activeJournal) return;
         const oldName = activeJournal.name;
-        const newName = window.prompt("Enter new name for the journal:", oldName);
         if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
         if (isJournalNameTaken(newName, journalId)) {
             showToast(`A journal named '${newName.trim()}' already exists.`, "error");
             return;
         }
+        renameJournalModal.classList.add('hidden');
         activeJournal.name = newName.trim();
         
         saveDataToFirestore(true).then(() => {
@@ -1758,8 +1866,79 @@
     
     function updateEntry(e) { e.preventDefault(); const entryId = document.getElementById('editEntryId').value; if (!entryId) return; let entryIndex, journalId; for (const jId in appData.journals) { const index = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (index !== -1) { entryIndex = index; journalId = jId; break; } } if (entryIndex === undefined) return; const formattedDate = assembleAndValidateDate(editDateDayInput, editDateMonthInput, editDateYearInput); if (!formattedDate) return; appData.journals[journalId].entries[entryIndex] = { id: entryId, date: formattedDate, type: document.getElementById('editType').value, method: document.getElementById('editMethod').value, narration: document.getElementById('editNarration').value.trim(), amount: parseFloat(editAmountInput.value.replace(/,/g, '')) || 0 }; saveDataToFirestore(true).then(() => { logActivity('update_entry', { narration: appData.journals[journalId].entries[entryIndex].narration, journalName: appData.journals[journalId].name }); showToast("Entry updated", "success"); }); editEntryModal.classList.add('hidden'); }
     
-    function deleteEntry(entryId) { let journalId; let deletedEntryNarration; for (const jId in appData.journals) { const entryIndex = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (entryIndex > -1) { journalId = jId; deletedEntryNarration = appData.journals[jId].entries[entryIndex].narration; appData.journals[jId].entries.splice(entryIndex, 1); break; } } if (!journalId) return; saveDataToFirestore(true).then(() => { logActivity('delete_entry', { narration: deletedEntryNarration, journalName: appData.journals[journalId].name }); showToast("Entry deleted", "info"); }); }
+    function deleteEntry(entryId) {
+        showConfirmationModal("Are you sure you want to delete this entry?", () => {
+            let journalId, entryIndex, deletedEntry;
+            for (const jId in appData.journals) {
+                const index = appData.journals[jId].entries.findIndex(e => e.id === entryId);
+                if (index > -1) {
+                    journalId = jId;
+                    entryIndex = index;
+                    break;
+                }
+            }
+            if (!journalId) return;
+
+            // Cache the entry for undo
+            deletedEntry = appData.journals[journalId].entries[entryIndex];
+            undoCache = { entry: deletedEntry, journalId: journalId, index: entryIndex };
+            
+            // Optimistically remove from data and UI
+            appData.journals[journalId].entries.splice(entryIndex, 1);
+            renderTable(); // Re-render to remove the row
+
+            // Show the undo toast
+            showUndoToast();
+        });
+    }
     
+    function showUndoToast() {
+        if (undoTimer) clearTimeout(undoTimer);
+
+        const undoWrapper = document.getElementById('undo-toast-wrapper');
+        undoWrapper.innerHTML = `
+            <div id="undo-toast" class="undo-toast-container">
+                <div class="bg-gray-800 text-white rounded-lg shadow-2xl p-4 flex items-center justify-between dark:bg-gray-900 dark:border dark:border-gray-700">
+                    <span class="text-sm font-medium">Entry deleted.</span>
+                    <button id="undo-btn" class="font-bold text-sm text-orange-400 hover:text-orange-300 transition-colors">UNDO</button>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('undo-btn').addEventListener('click', () => {
+            clearTimeout(undoTimer); // Prevent permanent deletion
+            
+            // Restore from cache
+            if (undoCache) {
+                appData.journals[undoCache.journalId].entries.splice(undoCache.index, 0, undoCache.entry);
+                undoCache = null;
+                renderTable();
+                showToast("Action undone.", "success");
+            }
+            
+            const toastEl = document.getElementById('undo-toast');
+            if (toastEl) {
+                toastEl.classList.add('fading-out');
+                toastEl.addEventListener('animationend', () => toastEl.remove());
+            }
+        });
+
+        undoTimer = setTimeout(() => {
+            const toastEl = document.getElementById('undo-toast');
+            if (toastEl) {
+                toastEl.classList.add('fading-out');
+                toastEl.addEventListener('animationend', () => toastEl.remove());
+            }
+            if (undoCache) {
+                // Permanently delete by saving the state where the entry is already removed
+                saveDataToFirestore(true).then(() => {
+                    logActivity('delete_entry', { narration: undoCache.entry.narration, journalName: appData.journals[undoCache.journalId]?.name || 'Unknown' });
+                });
+                undoCache = null; // Clear cache after permanent deletion
+            }
+        }, 8000); // 8-second window to undo
+    }
+
     function updateBulkDeleteButton() { const count = selectedEntryIds.size; bulkDeleteBtn.textContent = `Delete Selected (${count})`; bulkDeleteBtn.classList.toggle('hidden', count === 0); }
     
     function bulkDeleteEntries() { const count = selectedEntryIds.size; for (const jId in appData.journals) { appData.journals[jId].entries = appData.journals[jId].entries.filter(entry => !selectedEntryIds.has(entry.id)); } selectedEntryIds.clear(); saveDataToFirestore(true).then(() => { logActivity('bulk_delete_entries', { count }); showToast(`${count} entries deleted`, "info"); }); }
@@ -1996,8 +2175,11 @@
 
         if (isSelectAction) { 
             setActiveJournalView(journalId, true); 
-        } else if (isRenameAction) { 
-            renameActiveJournal(journalId); 
+        } else if (isRenameAction) {
+            renameJournalNameInput.value = appData.journals[journalId]?.name;
+            renameJournalIdInput.value = journalId;
+            renameJournalModal.classList.remove('hidden');
+            renameJournalNameInput.focus();
         } else if (isDeleteAction && isAdmin) { 
             const name = appData.journals[journalId]?.name;
             if (name) showConfirmationModal(`Delete '${name}' and all its entries? This cannot be undone.`, () => deleteActiveJournal(journalId)); 
@@ -2020,10 +2202,27 @@
     nextPageBtn.addEventListener('click', () => { viewOptions.currentPage++; renderTable(); });
     entryForm.addEventListener('submit', addEntry);
     editEntryForm.addEventListener('submit', updateEntry);
-    createJournalBtn.addEventListener('click', createNewJournal);
+    // START: JOURNAL MODAL EVENT LISTENERS
+    createJournalBtn.addEventListener('click', () => {
+        createJournalForm.reset();
+        createJournalModal.classList.remove('hidden');
+        newJournalNameInput.focus();
+    });
+    createJournalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        createNewJournal(newJournalNameInput.value);
+    });
+    createJournalCancelBtn.addEventListener('click', () => createJournalModal.classList.add('hidden'));
+
+    renameJournalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        renameActiveJournal(renameJournalIdInput.value, renameJournalNameInput.value);
+    });
+    renameJournalCancelBtn.addEventListener('click', () => renameJournalModal.classList.add('hidden'));
+    // END: JOURNAL MODAL EVENT LISTENERS
     mergeJournalBtn.addEventListener('click', toggleMergeMode);
     bulkDeleteBtn.addEventListener('click', () => { showConfirmationModal(`Are you sure you want to delete ${selectedEntryIds.size} selected entries? This cannot be undone.`, bulkDeleteEntries); });
-    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { showConfirmationModal("Are you sure you want to delete this entry?", () => deleteEntry(e.target.dataset.id)); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
+    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { deleteEntry(e.target.dataset.id); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
     tableBody.addEventListener('click', handleTableClick);
     recentEntriesBody.addEventListener('click', handleTableClick);
     selectAllCheckbox.addEventListener('change', (e) => { const checkboxes = tableBody.querySelectorAll('.row-checkbox'); checkboxes.forEach(checkbox => { const id = checkbox.dataset.id; checkbox.checked = e.target.checked; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } }); updateBulkDeleteButton(); });
@@ -2070,15 +2269,12 @@
             return;
         }
 
-        downloadBtn.disabled = true;
-        showToast('Preparing your workbook...', 'info');
-
         try {
-            const pyodide = await loadPy();
-            pyodide.globals.set('entries_json', JSON.stringify(entriesToDownload));
-            pyodide.globals.set('journal_name_js', journalName);
+            const pyodideInstance = await loadPy();
+            pyodideInstance.globals.set('entries_json', JSON.stringify(entriesToDownload));
+            pyodideInstance.globals.set('journal_name_js', journalName);
             
-            const base64Data = await pyodide.runPythonAsync(`
+            const base64Data = await pyodideInstance.runPythonAsync(`
 import json, io, base64
 from datetime import datetime
 from openpyxl import Workbook
@@ -2217,11 +2413,8 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch (err) {
-            console.error('Error generating file:', err.message);
+            console.error('Error generating file:', err);
             showToast('Error! Could not generate file.', 'error');
-        } finally {
-            downloadBtn.disabled = getFilteredEntries().length === 0;
-            statusMessage.textContent = '';
         }
     });
 
@@ -2229,12 +2422,11 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
     applyTheme();
 
     // --- CHANGE SUMMARY ---
-    // Simplified the "Reports" tab to better suit a yearly analysis workflow.
-    // 1. Removed the journal selector from the Reports page UI.
-    // 2. Updated the underlying JavaScript functions (`getEntriesForReportYears`, `populateReportsYearSelect`, etc.)
-    //    to always use data from ALL journals combined, ignoring the `currentJournalView` setting.
-    // 3. Removed the now-unused event listener and function for the journal selector on the reports page.
-    // This results in a cleaner UI that directly provides year-over-year analysis across all data.
+    // 1. **Lazy Loading for Excel Export:** The Pyodide library is now loaded on-demand when the "Download Excel" button is clicked, not at startup, improving initial app load time.
+    // 2. **Undo Delete:** A confirmation modal still appears, but after confirming, a toast bar provides an 8-second window to "Undo" the deletion of a single entry, preventing accidental data loss.
+    // 3. **Improved Journal Modals:** `window.prompt` has been replaced with clean, themed modals for creating and renaming journals, improving UI consistency and user experience.
+    // 4. **Simplified Reports Page:** The "Reports" page now automatically aggregates data from all journals, removing the journal selector for a more direct, high-level overview. The narration selector is also simplified.
+    // 5. **Data Structure for Categories:** The data model was updated to support a future standardized category system, paving the way for more accurate reporting.
   </script>
 </body>
 </html>
