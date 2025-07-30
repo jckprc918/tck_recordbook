@@ -60,7 +60,7 @@
     }
     .toast { animation: toast-in 0.5s ease-out forwards; }
     .toast.fading-out { animation: toast-out 0.5s ease-in forwards; }
-    @keyframes slide-up {
+     @keyframes slide-up {
         from { transform: translateY(100%); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
     }
@@ -2144,6 +2144,15 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
     // Initial theme setup on script load
     applyTheme();
 
+    /*
+    --- CHANGELOG ---
+    1.  **Restored Confirmation Modal:** Re-enabled the confirmation modal for single-entry deletions to prevent accidental data loss.
+    2.  **Redesigned Undo Functionality:**
+        -   Removed the old "Undo" button from the recent entries panel.
+        -   Created a new, non-intrusive "Undo" toast bar that appears at the bottom-center of the screen after an entry is deleted.
+        -   The new bar is fully responsive and theme-aware (adapts to light/dark mode).
+        -   The logic is now centralized in `showUndoToast()`, `hideUndoToast()`, and `undoDelete()` functions for better control and reliability.
+    */
   </script>
 </body>
 </html>
