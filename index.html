@@ -454,7 +454,10 @@
                     </div>
                     <div id="recent-entries-panel" class="lg:col-span-2">
                          <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-gray-800">
-                            <h2 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Recent Entries</h2>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Recent Entries</h2>
+                                <button id="undo-btn" class="hidden bg-blue-100 hover:bg-blue-200 text-blue-700 font-bold py-1 px-3 rounded-lg text-xs dark:bg-blue-900/50 dark:hover:bg-blue-900/80 dark:text-blue-200">Undo</button>
+                            </div>
                             <div class="overflow-y-auto" style="max-height: 28rem;">
                                 <table id="recentEntriesTable" class="min-w-full text-sm">
                                     <thead class="bg-gray-100 sticky top-0 dark:bg-gray-700">
@@ -852,6 +855,7 @@
     const editNativeDatePicker = document.getElementById('edit-native-date-picker');
     const editAmountInput = document.getElementById('editAmount');
     const recentEntriesBody = document.getElementById('recent-entries-body');
+    const undoBtn = document.getElementById('undo-btn');
     const dashboardMainContent = document.getElementById('dashboard-main-content');
     const dashboardMessage = document.getElementById('dashboard-message');
     const dashboardTitle = document.getElementById('dashboard-title');
@@ -891,7 +895,7 @@
     let isMergeModeActive = false, mergeDestinationId = null;
     let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month' };
     let selectedEntryIds = new Set();
-    let syncTimeout, inactivityTimer, tour, inputConfirmCallback = null, undoCache = null;
+    let syncTimeout, inactivityTimer, tour, inputConfirmCallback = null, undoCache = null, undoTimeout;
     
     // --- THEME MANAGEMENT ---
     const applyTheme = () => {
@@ -945,7 +949,8 @@
             const actionBtn = document.createElement('button');
             actionBtn.className = 'bg-white/20 hover:bg-white/40 px-3 py-1 rounded text-xs font-semibold transition-colors';
             actionBtn.textContent = options.actionText;
-            actionBtn.onclick = () => {
+            actionBtn.onclick = (e) => {
+                e.stopPropagation();
                 options.action();
                 toast.remove();
             };
@@ -1569,6 +1574,8 @@
                 logActivity('undo_delete_entry', { narration: entry.narration });
             });
         }
+        undoBtn.classList.add('hidden');
+        clearTimeout(undoTimeout);
         undoCache = null;
     }
     
@@ -1628,10 +1635,12 @@
         
         saveDataToFirestore(true).then(() => {
             logActivity('delete_entry', { narration: deletedEntry.narration, journalName: appData.journals[journalId].name });
-            showToast("Entry deleted", "info", {
-                actionText: "Undo",
-                action: undoDelete
-            });
+            undoBtn.classList.remove('hidden');
+            clearTimeout(undoTimeout);
+            undoTimeout = setTimeout(() => {
+                undoBtn.classList.add('hidden');
+                undoCache = null; 
+            }, 7000); 
         });
     }
     
@@ -1759,6 +1768,10 @@
     const handleTabSwitch = (activeTabKey) => { 
         if (tour && tour.isActive()) { tour.cancel(); } 
         
+        clearTimeout(undoTimeout);
+        undoBtn.classList.add('hidden');
+        undoCache = null;
+
         if (activeTabKey !== 'dashboard') {
             viewOptions.dashboardDateRange = 'month';
         }
@@ -1886,7 +1899,7 @@
     createJournalBtn.addEventListener('click', createNewJournal);
     mergeJournalBtn.addEventListener('click', toggleMergeMode);
     bulkDeleteBtn.addEventListener('click', () => { showConfirmationModal(`Are you sure you want to delete ${selectedEntryIds.size} selected entries? This cannot be undone.`, bulkDeleteEntries); });
-    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { deleteEntry(e.target.dataset.id); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
+    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { showConfirmationModal("Are you sure you want to delete this entry?", () => deleteEntry(e.target.dataset.id)); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
     tableBody.addEventListener('click', handleTableClick);
     recentEntriesBody.addEventListener('click', handleTableClick);
     selectAllCheckbox.addEventListener('change', (e) => { const checkboxes = tableBody.querySelectorAll('.row-checkbox'); checkboxes.forEach(checkbox => { const id = checkbox.dataset.id; checkbox.checked = e.target.checked; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } }); updateBulkDeleteButton(); });
@@ -1894,6 +1907,7 @@
     modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
     inputModalForm.addEventListener('submit', (e) => { e.preventDefault(); if (typeof inputConfirmCallback === 'function') { inputConfirmCallback(inputModalField.value); } inputModal.classList.add('hidden'); inputConfirmCallback = null; });
     inputModalCancelBtn.addEventListener('click', () => { inputModal.classList.add('hidden'); inputConfirmCallback = null; });
+    undoBtn.addEventListener('click', undoDelete);
     editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden'));
     importBackupBtn.addEventListener('click', () => fileImporter.click());
     fileImporter.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { importedDataCache = JSON.parse(e.target.result); if (importedDataCache && importedDataCache.journals) { importOptionsModal.classList.remove('hidden'); } else { throw new Error("Invalid backup file format."); } } catch (err) { showToast(err.message, "error"); importedDataCache = null; } }; reader.readAsText(file); event.target.value = null; });
