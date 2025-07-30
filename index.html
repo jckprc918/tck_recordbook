@@ -2147,12 +2147,12 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
 
     /*
     --- CHANGELOG ---
-    1.  **Restored Confirmation Modal:** The confirmation modal is now correctly shown before deleting a single entry.
+    1.  **Restored Confirmation Modal:** Re-enabled the confirmation modal for single-entry deletions to prevent accidental data loss.
     2.  **Redesigned Undo Functionality:**
-        -   Added a new `undo-toast-container` to the main body for the undo bar.
-        -   Implemented `showUndoToast`, `hideUndoToast`, and `undoDelete` functions to manage the new toast bar's state, appearance, and functionality.
-        -   The `deleteEntry` function now calls `showUndoToast` instead of a standard toast.
-        -   The new undo bar is styled to be responsive, centered, and theme-aware.
+        -   The "Undo" functionality is now a toast-style bar that appears at the bottom-center of the screen.
+        -   It is fully responsive and theme-aware, adapting to light/dark mode and screen size.
+        -   The logic is now centralized in `showUndoToast()`, `hideUndoToast()`, and `undoDelete()` functions for better control and reliability.
+        -   The `deleteEntry` function now calls the confirmation modal first and then shows the undo toast.
     */
   </script>
 </body>
