@@ -1594,13 +1594,15 @@
         toast.appendChild(messageEl);
 
         const actionBtn = document.createElement('button');
+        actionBtn.id = 'undo-action-btn';
         actionBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm';
         actionBtn.textContent = 'Undo';
-        actionBtn.onclick = (e) => {
+        toast.appendChild(actionBtn);
+        
+        actionBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             undoDelete();
-        };
-        toast.appendChild(actionBtn);
+        });
         
         currentUndoToast = toast;
         undoToastContainer.appendChild(toast);
@@ -1944,7 +1946,6 @@
     modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
     inputModalForm.addEventListener('submit', (e) => { e.preventDefault(); if (typeof inputConfirmCallback === 'function') { inputConfirmCallback(inputModalField.value); } inputModal.classList.add('hidden'); inputConfirmCallback = null; });
     inputModalCancelBtn.addEventListener('click', () => { inputModal.classList.add('hidden'); inputConfirmCallback = null; });
-    undoActionBtn.addEventListener('click', undoDelete);
     editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden'));
     importBackupBtn.addEventListener('click', () => fileImporter.click());
     fileImporter.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { importedDataCache = JSON.parse(e.target.result); if (importedDataCache && importedDataCache.journals) { importOptionsModal.classList.remove('hidden'); } else { throw new Error("Invalid backup file format."); } } catch (err) { showToast(err.message, "error"); importedDataCache = null; } }; reader.readAsText(file); event.target.value = null; });
@@ -2146,12 +2147,12 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
 
     /*
     --- CHANGELOG ---
-    1.  **Restored Confirmation Modal:** Re-enabled the confirmation modal for single-entry deletions to prevent accidental data loss.
+    1.  **Restored Confirmation Modal:** The confirmation modal is now correctly shown before deleting a single entry.
     2.  **Redesigned Undo Functionality:**
-        -   Removed the old "Undo" button from the recent entries panel.
-        -   Created a new, non-intrusive "Undo" toast bar that appears at the bottom-center of the screen after an entry is deleted.
-        -   The new bar is fully responsive and theme-aware (adapts to light/dark mode).
-        -   The logic is now centralized in `showUndoToast()`, `hideUndoToast()`, and `undoDelete()` functions for better control and reliability.
+        -   Added a new `undo-toast-container` to the main body for the undo bar.
+        -   Implemented `showUndoToast`, `hideUndoToast`, and `undoDelete` functions to manage the new toast bar's state, appearance, and functionality.
+        -   The `deleteEntry` function now calls `showUndoToast` instead of a standard toast.
+        -   The new undo bar is styled to be responsive, centered, and theme-aware.
     */
   </script>
 </body>
