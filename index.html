@@ -61,15 +61,19 @@
     .toast { animation: toast-in 0.5s ease-out forwards; }
     .toast.fading-out { animation: toast-out 0.5s ease-in forwards; }
     @keyframes slide-up {
-        from { transform: translateY(100%); }
-        to { transform: translateY(0); }
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
     @keyframes slide-down {
-        from { transform: translateY(0); }
-        to { transform: translateY(100%); }
+        from { transform: translateY(0); opacity: 1; }
+        to { transform: translateY(100%); opacity: 0; }
     }
-    .undo-bar.show { animation: slide-up 0.5s ease-out forwards; }
-    .undo-bar.hide { animation: slide-down 0.5s ease-in forwards; }
+    .undo-bar {
+        animation-duration: 0.5s;
+        animation-timing-function: ease-out;
+    }
+    .undo-bar.show { animation-name: slide-up; }
+    .undo-bar.hide { animation-name: slide-down; }
     .chart-btn.active, .kpi-range-btn.active {
         background-color: #f97316; /* TCK Orange */
         color: white;
@@ -653,11 +657,8 @@
         <datalist id="narration-suggestions"></datalist>
     </main>
 
-    <div id="undo-bar" class="undo-bar fixed bottom-0 left-0 right-0 p-4 bg-gray-800 text-white dark:bg-gray-700 shadow-lg hidden">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <span>Entry deleted.</span>
-            <button id="undo-action-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm">Undo</button>
-        </div>
+    <div id="undo-toast-container" class="fixed bottom-4 left-0 right-0 z-[9999] flex justify-center px-4 pointer-events-none">
+        <!-- Undo toast will be dynamically injected here -->
     </div>
   </div>
 
@@ -872,8 +873,7 @@
     const editNativeDatePicker = document.getElementById('edit-native-date-picker');
     const editAmountInput = document.getElementById('editAmount');
     const recentEntriesBody = document.getElementById('recent-entries-body');
-    const undoBar = document.getElementById('undo-bar');
-    const undoActionBtn = document.getElementById('undo-action-btn');
+    const undoToastContainer = document.getElementById('undo-toast-container');
     const dashboardMainContent = document.getElementById('dashboard-main-content');
     const dashboardMessage = document.getElementById('dashboard-message');
     const dashboardTitle = document.getElementById('dashboard-title');
@@ -913,7 +913,7 @@
     let isMergeModeActive = false, mergeDestinationId = null;
     let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month' };
     let selectedEntryIds = new Set();
-    let syncTimeout, inactivityTimer, tour, inputConfirmCallback = null, undoCache = null, undoTimeout;
+    let syncTimeout, inactivityTimer, tour, inputConfirmCallback = null, undoCache = null, undoTimeout, currentUndoToast = null;
     
     // --- THEME MANAGEMENT ---
     const applyTheme = () => {
@@ -1582,6 +1582,46 @@
         }
     }
 
+    function hideUndoToast() {
+        if (currentUndoToast) {
+            currentUndoToast.classList.remove('show');
+            currentUndoToast.classList.add('hide');
+            currentUndoToast.addEventListener('animationend', () => {
+                if (currentUndoToast) currentUndoToast.remove();
+                currentUndoToast = null;
+            }, { once: true });
+        }
+        clearTimeout(undoTimeout);
+        undoCache = null;
+    }
+
+    function showUndoToast() {
+        hideUndoToast(); // Clear any existing undo toast first
+
+        const toast = document.createElement('div');
+        toast.className = 'undo-bar show pointer-events-auto bg-gray-800 text-white dark:bg-gray-700 shadow-lg rounded-md w-full sm:w-1/3 p-4 flex justify-between items-center';
+        
+        const messageEl = document.createElement('span');
+        messageEl.textContent = 'Entry deleted.';
+        toast.appendChild(messageEl);
+
+        const actionBtn = document.createElement('button');
+        actionBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm';
+        actionBtn.textContent = 'Undo';
+        actionBtn.onclick = (e) => {
+            e.stopPropagation();
+            undoDelete();
+        };
+        toast.appendChild(actionBtn);
+        
+        currentUndoToast = toast;
+        undoToastContainer.appendChild(toast);
+
+        undoTimeout = setTimeout(() => {
+            hideUndoToast();
+        }, 7000);
+    }
+    
     function undoDelete() {
         if (!undoCache) return;
         const { journalId, entry, originalIndex } = undoCache;
@@ -1592,10 +1632,7 @@
                 logActivity('undo_delete_entry', { narration: entry.narration });
             });
         }
-        undoBar.classList.remove('show');
-        undoBar.classList.add('hide');
-        clearTimeout(undoTimeout);
-        undoCache = null;
+        hideUndoToast();
     }
     
     function addEntry(e) {
@@ -1654,14 +1691,7 @@
         
         saveDataToFirestore(true).then(() => {
             logActivity('delete_entry', { narration: deletedEntry.narration, journalName: appData.journals[journalId].name });
-            undoBar.classList.remove('hidden', 'hide');
-            undoBar.classList.add('show');
-            clearTimeout(undoTimeout);
-            undoTimeout = setTimeout(() => {
-                undoBar.classList.remove('show');
-                undoBar.classList.add('hide');
-                undoCache = null; 
-            }, 7000); 
+            showUndoToast();
         });
     }
     
@@ -1789,10 +1819,7 @@
     const handleTabSwitch = (activeTabKey) => { 
         if (tour && tour.isActive()) { tour.cancel(); } 
         
-        clearTimeout(undoTimeout);
-        undoBar.classList.remove('show');
-        undoBar.classList.add('hide');
-        undoCache = null;
+        hideUndoToast();
 
         if (activeTabKey !== 'dashboard') {
             viewOptions.dashboardDateRange = 'month';
