@@ -688,26 +688,54 @@
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <!-- Year-to-Year Breakdown by Source -->
+                        <!-- Source vs Source Comparison -->
                         <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-[#161B22]">
-                            <h3 class="text-lg font-bold text-gray-800 mb-4 dark:text-gray-100">Year-to-Year Breakdown by Source</h3>
-                            <div class="overflow-y-auto" style="max-height: 20rem;">
-                                <table class="min-w-full text-sm">
-                                    <thead class="bg-gray-100 sticky top-0 dark:bg-gray-800">
-                                        <tr class="text-left text-gray-600 uppercase tracking-wider dark:text-gray-400">
-                                            <th class="py-2 px-3">Source</th>
-                                            <th class="py-2 px-3 text-right">Income (Curr.)</th>
-                                            <th class="py-2 px-3 text-right">Income (Prev.)</th>
-                                            <th class="py-2 px-3 text-right">Change</th>
-                                            <th class="py-2 px-3 text-right">Expense (Curr.)</th>
-                                            <th class="py-2 px-3 text-right">Expense (Prev.)</th>
-                                            <th class="py-2 px-3 text-right">Change</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="yoy-breakdown-table-body" class="divide-y divide-gray-200 dark:divide-gray-800">
-                                        <!-- Data will be injected here -->
-                                    </tbody>
-                                </table>
+                            <h3 class="text-lg font-bold text-gray-800 mb-4 dark:text-gray-100">Source vs. Source Monthly Comparison</h3>
+                            
+                            <!-- Selectors -->
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label for="source-compare-select-1" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source 1</label>
+                                    <select id="source-compare-select-1" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white"></select>
+                                </div>
+                                <div>
+                                    <label for="source-compare-select-2" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source 2</label>
+                                    <select id="source-compare-select-2" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white"></select>
+                                </div>
+                            </div>
+                            
+                            <!-- Comparison Tables -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto" style="max-height: 20rem;">
+                                <!-- Table 1 -->
+                                <div>
+                                    <table class="min-w-full text-xs">
+                                        <thead class="bg-gray-100 sticky top-0 dark:bg-gray-800">
+                                            <tr class="text-left text-gray-600 uppercase tracking-wider dark:text-gray-400">
+                                                <th class="py-2 px-2">Month</th>
+                                                <th class="py-2 px-2 text-right">Income</th>
+                                                <th class="py-2 px-2 text-right">Expense</th>
+                                                <th class="py-2 px-2 text-right">Net</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="source-compare-table-1-body" class="divide-y divide-gray-200 dark:divide-gray-800">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Table 2 -->
+                                <div>
+                                     <table class="min-w-full text-xs">
+                                        <thead class="bg-gray-100 sticky top-0 dark:bg-gray-800">
+                                            <tr class="text-left text-gray-600 uppercase tracking-wider dark:text-gray-400">
+                                                <th class="py-2 px-2">Month</th>
+                                                <th class="py-2 px-2 text-right">Income</th>
+                                                <th class="py-2 px-2 text-right">Expense</th>
+                                                <th class="py-2 px-2 text-right">Net</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="source-compare-table-2-body" class="divide-y divide-gray-200 dark:divide-gray-800">
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
 
@@ -1017,8 +1045,11 @@
     const reportsMainContent = document.getElementById('reports-main-content');
     const reportsMessage = document.getElementById('reports-message');
     const yoyChartCanvas = document.getElementById('yoyComparisonChart');
-    const yoyBreakdownTableBody = document.getElementById('yoy-breakdown-table-body');
     const cashFlowTableBody = document.getElementById('cash-flow-table-body');
+    const sourceCompareSelect1 = document.getElementById('source-compare-select-1');
+    const sourceCompareSelect2 = document.getElementById('source-compare-select-2');
+    const sourceCompareTable1Body = document.getElementById('source-compare-table-1-body');
+    const sourceCompareTable2Body = document.getElementById('source-compare-table-2-body');
     let yoyChartInstance;
     // END: REPORTS PAGE REFS
 
@@ -1026,7 +1057,7 @@
     // --- APP STATE ---
     let appData = {}, currentUser = null, currentUserProfile = null, unsubscribeFromFirestore = null, confirmCallback = null, importedDataCache = null, lastActiveSingleJournalId = null;
     let isMergeModeActive = false, mergeDestinationId = null;
-    let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month', reportsSelectedYear: new Date().getFullYear().toString(), reportsSelectedCategory: '' };
+    let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month', reportsSelectedYear: new Date().getFullYear().toString(), reportsCompareSource1: 'MTN', reportsCompareSource2: 'Bank' };
     let selectedEntryIds = new Set();
     let syncTimeout, inactivityTimer, tour, undoCache = null, undoTimer = null;
     
@@ -1622,57 +1653,7 @@
             }
         });
     }
-
-    function renderYoYBreakdownTable() {
-        const { currentYearEntries, prevYearEntries } = getEntriesForReportYears();
-        
-        const allMethods = [...new Set([
-            ...currentYearEntries.map(e => e.method),
-            ...prevYearEntries.map(e => e.method)
-        ])].sort();
-
-        if (allMethods.length === 0) {
-            yoyBreakdownTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500 dark:text-gray-400">No source data for these years.</td></tr>`;
-            return;
-        }
-
-        const calcChangePercent = (current, previous) => {
-            if (previous === 0) {
-                return current > 0 ? '<span class="text-lime-500">New</span>' : '-';
-            }
-            const change = ((current - previous) / previous) * 100;
-            const color = change >= 0 ? 'text-lime-500' : 'text-red-500';
-            const arrow = change >= 0 ? '▲' : '▼';
-            return `<span class="${color}">${arrow} ${Math.abs(change).toFixed(1)}%</span>`;
-        };
-
-        const rowsHtml = allMethods.map(method => {
-            if (!method) return ''; // Skip entries with no method
-            const currentIncome = currentYearEntries.filter(e => e.method === method && e.type === 'Income').reduce((sum, e) => sum + e.amount, 0);
-            const prevIncome = prevYearEntries.filter(e => e.method === method && e.type === 'Income').reduce((sum, e) => sum + e.amount, 0);
-            const currentExpense = currentYearEntries.filter(e => e.method === method && e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0);
-            const prevExpense = prevYearEntries.filter(e => e.method === method && e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0);
-            
-            const incomeChange = calcChangePercent(currentIncome, prevIncome);
-            // Invert expense change color logic (increase is bad)
-            const expenseChange = calcChangePercent(currentExpense, prevExpense).replace('text-lime-500', 'text-red-500 temp-color').replace('text-red-500', 'text-lime-500').replace('temp-color', 'text-red-500');
-
-            return `
-                <tr class="dark:text-gray-300">
-                    <td class="py-2 px-3 font-medium">${method}</td>
-                    <td class="py-2 px-3 text-right font-mono">${currentIncome.toLocaleString()}</td>
-                    <td class="py-2 px-3 text-right font-mono text-gray-400">${prevIncome.toLocaleString()}</td>
-                    <td class="py-2 px-3 text-right font-mono">${incomeChange}</td>
-                    <td class="py-2 px-3 text-right font-mono">${currentExpense.toLocaleString()}</td>
-                    <td class="py-2 px-3 text-right font-mono text-gray-400">${prevExpense.toLocaleString()}</td>
-                    <td class="py-2 px-3 text-right font-mono">${expenseChange}</td>
-                </tr>
-            `;
-        }).join('');
-
-        yoyBreakdownTableBody.innerHTML = rowsHtml;
-    }
-
+    
     function renderCashFlowTable() {
         const { currentYearEntries } = getEntriesForReportYears();
         const monthlyData = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
@@ -1717,6 +1698,68 @@
         reportsYearSelect.value = viewOptions.reportsSelectedYear;
     }
 
+    function populateSourceCompareSelectors() {
+        const { currentYearEntries } = getEntriesForReportYears();
+        const sources = [...new Set(currentYearEntries.map(e => e.method).filter(Boolean))].sort();
+        
+        const optionsHtml = sources.map(source => `<option value="${source}">${source}</option>`).join('');
+        
+        sourceCompareSelect1.innerHTML = optionsHtml;
+        sourceCompareSelect2.innerHTML = optionsHtml;
+
+        // Set default selections
+        viewOptions.reportsCompareSource1 = sources.includes(viewOptions.reportsCompareSource1) ? viewOptions.reportsCompareSource1 : (sources[0] || '');
+        viewOptions.reportsCompareSource2 = sources.includes(viewOptions.reportsCompareSource2) ? viewOptions.reportsCompareSource2 : (sources[1] || sources[0] || '');
+
+        sourceCompareSelect1.value = viewOptions.reportsCompareSource1;
+        sourceCompareSelect2.value = viewOptions.reportsCompareSource2;
+    }
+
+    function renderSingleSourceTable(tableBodyEl, source) {
+        if (!source) {
+            tableBodyEl.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">Select a source</td></tr>`;
+            return;
+        }
+
+        const { currentYearEntries } = getEntriesForReportYears();
+        const sourceEntries = currentYearEntries.filter(e => e.method === source);
+
+        if (sourceEntries.length === 0) {
+            tableBodyEl.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No data for ${source}</td></tr>`;
+            return;
+        }
+
+        const monthlyData = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
+
+        sourceEntries.forEach(e => {
+            const monthIndex = new Date(e.date).getMonth();
+            if (e.type === 'Income') {
+                monthlyData[monthIndex].income += e.amount;
+            } else {
+                monthlyData[monthIndex].expense += e.amount;
+            }
+        });
+
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        tableBodyEl.innerHTML = monthlyData.map((month, index) => {
+            const net = month.income - month.expense;
+            const netClass = net > 0 ? 'text-lime-600' : (net < 0 ? 'text-red-600' : 'text-gray-500');
+            return `
+                <tr class="dark:text-gray-300">
+                    <td class="py-1 px-2 font-medium">${monthNames[index]}</td>
+                    <td class="py-1 px-2 text-right font-mono">${month.income > 0 ? month.income.toLocaleString() : '-'}</td>
+                    <td class="py-1 px-2 text-right font-mono">${month.expense > 0 ? month.expense.toLocaleString() : '-'}</td>
+                    <td class="py-1 px-2 text-right font-mono ${netClass}">${net.toLocaleString()}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function renderSourceComparisonTables() {
+        renderSingleSourceTable(sourceCompareTable1Body, viewOptions.reportsCompareSource1);
+        renderSingleSourceTable(sourceCompareTable2Body, viewOptions.reportsCompareSource2);
+    }
+
     function renderReportsPage() {
         if (!currentUserProfile || currentUserProfile.role !== 'admin' || !appData.journals) {
             reportsMainContent.classList.add('hidden');
@@ -1734,15 +1777,17 @@
             reportsMessage.textContent = "No data available for the selected year.";
             if (yoyChartInstance) yoyChartInstance.destroy();
             cashFlowTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No data</td></tr>`;
-            yoyBreakdownTableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-gray-500">No data</td></tr>`;
+            sourceCompareTable1Body.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No data</td></tr>`;
+            sourceCompareTable2Body.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No data</td></tr>`;
             return;
         }
         
         reportsMainContent.classList.remove('hidden');
         reportsMessage.classList.add('hidden');
 
+        populateSourceCompareSelectors();
         renderYoYChart();
-        renderYoYBreakdownTable();
+        renderSourceComparisonTables();
         renderCashFlowTable();
     }
 
@@ -2187,6 +2232,14 @@
         viewOptions.reportsSelectedYear = e.target.value;
         renderReportsPage();
     });
+    sourceCompareSelect1.addEventListener('change', (e) => {
+        viewOptions.reportsCompareSource1 = e.target.value;
+        renderSourceComparisonTables();
+    });
+    sourceCompareSelect2.addEventListener('change', (e) => {
+        viewOptions.reportsCompareSource2 = e.target.value;
+        renderSourceComparisonTables();
+    });
     // END: REPORTS PAGE LISTENERS
     prevPageBtn.addEventListener('click', () => { if (viewOptions.currentPage > 1) { viewOptions.currentPage--; renderTable(); } });
     nextPageBtn.addEventListener('click', () => { viewOptions.currentPage++; renderTable(); });
@@ -2415,7 +2468,7 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
     // 1. **Lazy Loading for Excel Export:** The Pyodide library is now loaded on-demand when the "Download Excel" button is clicked, not at startup, improving initial app load time.
     // 2. **Undo Delete:** A confirmation modal still appears, but after confirming, a toast bar provides an 8-second window to "Undo" the deletion of a single entry, preventing accidental data loss.
     // 3. **Improved Journal Modals:** `window.prompt` has been replaced with clean, themed modals for creating and renaming journals, improving UI consistency and user experience.
-    // 4. **Replaced Reports Chart with Table:** The "Spending by Narration Over Time" line chart on the Reports page has been replaced with a detailed "Year-to-Year Breakdown by Source" table, offering more granular comparison data.
+    // 4. **New Source Comparison Report:** The "Year-to-Year Breakdown" table has been replaced with a "Source vs. Source Monthly Comparison" feature. This allows users to select two sources and see their monthly cash flows side-by-side in two separate tables for the selected year.
     // 5. **Data Structure for Categories:** The data model was updated to support a future standardized category system, paving the way for more accurate reporting.
   </script>
 </body>
