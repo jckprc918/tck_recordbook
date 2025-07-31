@@ -95,6 +95,22 @@
         background-color: #374151; /* Gray-700 */
     }
 
+    /* START: CHANGE 1 - Pulse Animation for Logo */
+    @keyframes pulse-logo {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
+    }
+    .animate-pulse-logo {
+        animation: pulse-logo 2s ease-in-out infinite;
+    }
+    /* END: CHANGE 1 */
+
     /* START: HELP BUTTON STYLES */
     .help-btn {
         position: fixed;
@@ -231,33 +247,18 @@
     #entriesTable.selection-hidden > tbody > tr > td:first-child {
         display: none;
     }
-
-    /* START: UNDO TOAST STYLES */
-    @keyframes slide-in-bottom {
-      from { transform: translateY(100%); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    @keyframes slide-out-bottom {
-      from { transform: translateY(0); opacity: 1; }
-      to { transform: translateY(100%); opacity: 0; }
-    }
-    .undo-toast-container {
-        position: fixed;
-        bottom: 2rem;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 33.333333%;
-        z-index: 10000;
-        animation: slide-in-bottom 0.5s ease-out forwards;
-    }
-    .undo-toast-container.fading-out {
-        animation: slide-out-bottom 0.5s ease-in forwards;
-    }
-    /* END: UNDO TOAST STYLES */
-
   </style>
 </head>
 <body class="bg-gray-100 dark:bg-[#0D1117] min-h-screen font-sans">
+
+  <!-- START: CHANGE 1 - Loading Overlay -->
+  <div id="loading-overlay" class="fixed inset-0 bg-gray-100 dark:bg-[#0D1117] flex items-center justify-center z-[10000] hidden">
+    <div class="text-center">
+        <img src="logo.png" alt="TCK Logo" class="h-24 w-24 mx-auto animate-pulse-logo">
+        <p class="mt-4 text-lg font-medium text-gray-700 dark:text-gray-300">Loading Records...</p>
+    </div>
+  </div>
+  <!-- END: CHANGE 1 -->
 
   <!-- Login View -->
   <div id="login-view" class="w-full min-h-screen flex items-center justify-center p-4">
@@ -342,12 +343,6 @@
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
                         <span class="hidden md:inline">Journals</span>
                     </button>
-                    <!-- START: NEW REPORTS TAB BUTTON (ADMIN ONLY) -->
-                    <button id="reports-tab-btn" type="button" title="Reports" class="tab-btn flex items-center gap-2 whitespace-nowrap py-2 px-3 rounded-md font-medium text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-800 hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 100 15 7.5 7.5 0 000-15z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" /></svg>
-                        <span class="hidden md:inline">Reports</span>
-                    </button>
-                    <!-- END: NEW REPORTS TAB BUTTON (ADMIN ONLY) -->
                 </div>
             </nav>
             <div class="flex items-center flex-shrink-0 gap-2 sm:gap-4">
@@ -469,7 +464,7 @@
                               </select>
                             </div>
                             <div>
-                              <label for="narration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Details</label>
+                              <label for="narration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Category</label>
                               <input type="text" id="narration" list="narration-suggestions" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
                             </div>
                             <div>
@@ -666,103 +661,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- START: NEW REPORTS PAGE (ADMIN ONLY) -->
-            <div id="reports-content-container" class="hidden">
-                <div class="flex justify-between items-center flex-wrap gap-4 mb-6">
-                    <div class="flex items-center gap-3">
-                        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Advanced Reports</h2>
-                         <select id="reports-journal-select" class="hidden rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white"></select>
-                    </div>
-                    <div class="flex items-center gap-3">
-                         <label for="reports-year-select" class="text-sm font-medium text-gray-700 dark:text-gray-300">Year:</label>
-                         <select id="reports-year-select" class="rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white"></select>
-                    </div>
-                </div>
-
-                <div id="reports-main-content" class="space-y-8">
-                    <!-- Year-over-Year Comparison -->
-                    <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-[#161B22]">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4 dark:text-gray-100">Year-over-Year Comparison</h3>
-                        <div class="h-80"><canvas id="yoyComparisonChart"></canvas></div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <!-- Source vs Source Comparison -->
-                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-[#161B22]">
-                            <h3 class="text-lg font-bold text-gray-800 mb-4 dark:text-gray-100">Source vs. Source Monthly Comparison</h3>
-                            
-                            <!-- Selectors -->
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <div>
-                                    <label for="source-compare-select-1" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source 1</label>
-                                    <select id="source-compare-select-1" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white"></select>
-                                </div>
-                                <div>
-                                    <label for="source-compare-select-2" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source 2</label>
-                                    <select id="source-compare-select-2" class="mt-1 w-full rounded-lg border-gray-300 shadow-sm p-2 text-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 dark:bg-gray-800 dark:border-gray-700 dark:text-white"></select>
-                                </div>
-                            </div>
-                            
-                            <!-- Comparison Tables -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto" style="max-height: 20rem;">
-                                <!-- Table 1 -->
-                                <div>
-                                    <table class="min-w-full text-xs">
-                                        <thead class="bg-gray-100 sticky top-0 dark:bg-gray-800">
-                                            <tr class="text-left text-gray-600 uppercase tracking-wider dark:text-gray-400">
-                                                <th class="py-2 px-2">Month</th>
-                                                <th class="py-2 px-2 text-right">Income</th>
-                                                <th class="py-2 px-2 text-right">Expense</th>
-                                                <th class="py-2 px-2 text-right">Net</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="source-compare-table-1-body" class="divide-y divide-gray-200 dark:divide-gray-800">
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <!-- Table 2 -->
-                                <div>
-                                     <table class="min-w-full text-xs">
-                                        <thead class="bg-gray-100 sticky top-0 dark:bg-gray-800">
-                                            <tr class="text-left text-gray-600 uppercase tracking-wider dark:text-gray-400">
-                                                <th class="py-2 px-2">Month</th>
-                                                <th class="py-2 px-2 text-right">Income</th>
-                                                <th class="py-2 px-2 text-right">Expense</th>
-                                                <th class="py-2 px-2 text-right">Net</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="source-compare-table-2-body" class="divide-y divide-gray-200 dark:divide-gray-800">
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Cash Flow Statement -->
-                        <div class="bg-white rounded-2xl shadow-lg p-6 w-full dark:bg-[#161B22]">
-                            <h3 class="text-lg font-bold text-gray-800 mb-4 dark:text-gray-100">Monthly Cash Flow Statement</h3>
-                            <div class="overflow-y-auto" style="max-height: 20rem;">
-                                <table class="min-w-full text-sm">
-                                    <thead class="bg-gray-100 sticky top-0 dark:bg-gray-800">
-                                        <tr class="text-left text-gray-600 uppercase tracking-wider dark:text-gray-400">
-                                            <th class="py-2 px-4">Month</th>
-                                            <th class="py-2 px-4 text-right">Income</th>
-                                            <th class="py-2 px-4 text-right">Expense</th>
-                                            <th class="py-2 px-4 text-right">Net Flow</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="cash-flow-table-body" class="divide-y divide-gray-200 dark:divide-gray-800">
-                                        <!-- Data will be injected here -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div id="reports-message" class="text-center text-gray-500 dark:text-gray-400 mt-8 hidden">Select a journal and year to see reports.</div>
-            </div>
-            <!-- END: NEW REPORTS PAGE (ADMIN ONLY) -->
         </div>
         <datalist id="narration-suggestions"></datalist>
     </main>
@@ -832,7 +730,7 @@
                     </select>
                 </div>
                 <div>
-                    <label for="editNarration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Details</label>
+                    <label for="editNarration" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Narration / Category</label>
                     <input type="text" id="editNarration" list="narration-suggestions" placeholder="e.g. Salary, Rent, Groceries" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
                 </div>
                 <div>
@@ -847,43 +745,26 @@
         </div>
     </div>
 
-    <!-- START: NEW JOURNAL MANAGEMENT MODALS -->
-    <div id="createJournalModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
-        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 dark:bg-[#161B22]">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Create New Journal</h3>
-            <form id="createJournalForm">
-                <div>
-                    <label for="newJournalName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Journal Name</label>
-                    <input type="text" id="newJournalName" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
-                </div>
-                <div class="flex justify-end gap-4 mt-6">
-                    <button type="button" id="createJournalCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Cancel</button>
-                    <button type="submit" class="px-6 py-2 rounded-lg bg-lime-600 hover:bg-lime-700 text-white font-semibold transition-colors">Create</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="renameJournalModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
-        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 dark:bg-[#161B22]">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 dark:text-gray-100">Rename Journal</h3>
-            <form id="renameJournalForm">
-                <input type="hidden" id="renameJournalId">
-                <div>
-                    <label for="renameJournalName" class="block text-sm font-medium text-gray-700 dark:text-gray-300">New Journal Name</label>
-                    <input type="text" id="renameJournalName" required class="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
-                </div>
-                <div class="flex justify-end gap-4 mt-6">
-                    <button type="button" id="renameJournalCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Cancel</button>
-                    <button type="submit" class="px-6 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors">Rename</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <!-- END: NEW JOURNAL MANAGEMENT MODALS -->
+  <!-- START: CHANGE 2 - Journal Name Modal -->
+  <div id="journalNameModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 hidden modal-backdrop">
+      <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 dark:bg-[#161B22]">
+          <h3 id="journalModalTitle" class="text-xl font-bold text-gray-800 mb-2 dark:text-gray-100">Journal Name</h3>
+          <p id="journalModalMessage" class="text-sm text-gray-600 mb-4 dark:text-gray-300">Please provide a name.</p>
+          <form id="journalNameForm">
+              <div>
+                  <label for="journalNameInput" class="sr-only">Journal Name</label>
+                  <input type="text" id="journalNameInput" placeholder="e.g., Personal Finances" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-orange-500 focus:ring focus:ring-orange-200 focus:ring-opacity-50 p-2 dark:bg-gray-800 dark:border-gray-700 dark:text-white" />
+              </div>
+              <div class="flex justify-end gap-4 mt-6">
+                  <button type="button" id="journalModalCancelBtn" class="px-6 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-colors dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200">Cancel</button>
+                  <button type="submit" id="journalModalConfirmBtn" class="px-6 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors">Save</button>
+              </div>
+          </form>
+      </div>
+  </div>
+  <!-- END: CHANGE 2 -->
 
   <div id="toast-container" class="fixed bottom-4 right-4 z-[9999] space-y-2"></div>
-  <div id="undo-toast-wrapper"></div> <!-- Wrapper for the undo toast -->
 
   <button id="app-help-btn" class="help-btn" title="Help">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -924,6 +805,7 @@
     const adminMenuBtn = document.getElementById('adminMenuBtn');
     const loginHelpBtn = document.getElementById('login-help-btn');
     const appHelpBtn = document.getElementById('app-help-btn');
+    const loadingOverlay = document.getElementById('loading-overlay');
     const loginView = document.getElementById('login-view');
     const appView = document.getElementById('app-view');
     const loginForm = document.getElementById('loginForm');
@@ -962,6 +844,13 @@
     const importMergeBtn = document.getElementById('importMergeBtn');
     const importReplaceBtn = document.getElementById('importReplaceBtn');
     const importCancelBtn = document.getElementById('importCancelBtn');
+    const journalNameModal = document.getElementById('journalNameModal');
+    const journalModalTitle = document.getElementById('journalModalTitle');
+    const journalModalMessage = document.getElementById('journalModalMessage');
+    const journalNameForm = document.getElementById('journalNameForm');
+    const journalNameInput = document.getElementById('journalNameInput');
+    const journalModalCancelBtn = document.getElementById('journalModalCancelBtn');
+    const journalModalConfirmBtn = document.getElementById('journalModalConfirmBtn');
     const mergeJournalBtn = document.getElementById('mergeJournalBtn');
     const mergeStatusMessage = document.getElementById('merge-status-message');
     const manageJournalSelect = document.getElementById('manage-journal-select');
@@ -1024,42 +913,17 @@
     const prevPageBtn = document.getElementById('prev-page-btn');
     const nextPageBtn = document.getElementById('next-page-btn');
     const pageInfo = document.getElementById('page-info');
-    const tabButtons = { dashboard: document.getElementById('dashboard-tab-btn'), add: document.getElementById('add-entry-tab-btn'), manage: document.getElementById('management-tab-btn'), data: document.getElementById('data-management-tab-btn'), reports: document.getElementById('reports-tab-btn') };
-    const tabContents = { dashboard: document.getElementById('dashboard-content-container'), add: document.getElementById('add-entry-content-container'), manage: document.getElementById('management-content-container'), data: document.getElementById('data-management-content-container'), admin: document.getElementById('admin-content-container'), reports: document.getElementById('reports-content-container') };
+    const tabButtons = { dashboard: document.getElementById('dashboard-tab-btn'), add: document.getElementById('add-entry-tab-btn'), manage: document.getElementById('management-tab-btn'), data: document.getElementById('data-management-tab-btn') };
+    const tabContents = { dashboard: document.getElementById('dashboard-content-container'), add: document.getElementById('add-entry-content-container'), manage: document.getElementById('management-content-container'), data: document.getElementById('data-management-content-container'), admin: document.getElementById('admin-content-container') };
     const activityLogContainer = document.getElementById('activity-log-container');
-    // START: JOURNAL MODAL REFS
-    const createJournalModal = document.getElementById('createJournalModal');
-    const createJournalForm = document.getElementById('createJournalForm');
-    const newJournalNameInput = document.getElementById('newJournalName');
-    const createJournalCancelBtn = document.getElementById('createJournalCancelBtn');
-    const renameJournalModal = document.getElementById('renameJournalModal');
-    const renameJournalForm = document.getElementById('renameJournalForm');
-    const renameJournalIdInput = document.getElementById('renameJournalId');
-    const renameJournalNameInput = document.getElementById('renameJournalName');
-    const renameJournalCancelBtn = document.getElementById('renameJournalCancelBtn');
-    // END: JOURNAL MODAL REFS
-    // START: REPORTS PAGE REFS
-    const reportsContentContainer = document.getElementById('reports-content-container');
-    const reportsJournalSelect = document.getElementById('reports-journal-select');
-    const reportsYearSelect = document.getElementById('reports-year-select');
-    const reportsMainContent = document.getElementById('reports-main-content');
-    const reportsMessage = document.getElementById('reports-message');
-    const yoyChartCanvas = document.getElementById('yoyComparisonChart');
-    const cashFlowTableBody = document.getElementById('cash-flow-table-body');
-    const sourceCompareSelect1 = document.getElementById('source-compare-select-1');
-    const sourceCompareSelect2 = document.getElementById('source-compare-select-2');
-    const sourceCompareTable1Body = document.getElementById('source-compare-table-1-body');
-    const sourceCompareTable2Body = document.getElementById('source-compare-table-2-body');
-    let yoyChartInstance;
-    // END: REPORTS PAGE REFS
 
 
     // --- APP STATE ---
-    let appData = {}, currentUser = null, currentUserProfile = null, unsubscribeFromFirestore = null, confirmCallback = null, importedDataCache = null, lastActiveSingleJournalId = null;
+    let appData = {}, currentUser = null, currentUserProfile = null, unsubscribeFromFirestore = null, confirmCallback = null, journalNameConfirmCallback = null, importedDataCache = null, lastActiveSingleJournalId = null;
     let isMergeModeActive = false, mergeDestinationId = null;
-    let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month', reportsSelectedYear: new Date().getFullYear().toString(), reportsCompareSource1: 'MTN', reportsCompareSource2: 'Bank' };
+    let viewOptions = { currentJournalView: 'all', sortBy: 'date_desc', filterByType: 'all', filterByMethod: 'all', searchTerm: '', startDate: null, endDate: null, currentPage: 1, itemsPerPage: 50, chartDataType: 'expense', dashboardDateRange: 'month' };
     let selectedEntryIds = new Set();
-    let syncTimeout, inactivityTimer, tour, undoCache = null, undoTimer = null;
+    let syncTimeout, inactivityTimer, tour;
     
     // --- THEME MANAGEMENT ---
     const applyTheme = () => {
@@ -1083,10 +947,6 @@
             if (!tabContents.dashboard.classList.contains('hidden')) {
                 renderDashboard();
             }
-        }
-        // Re-render reports page if it's active
-        if (!tabContents.reports.classList.contains('hidden')) {
-            renderReportsPage();
         }
     };
 
@@ -1113,73 +973,54 @@
     function getFormattedDate(date, format = 'dd/mm/yyyy') { if (!date) return ''; const d = new Date(date); const userTimezoneOffset = d.getTimezoneOffset() * 60000; const adjustedDate = new Date(d.getTime() + userTimezoneOffset); const yyyy = adjustedDate.getFullYear(); const mm = String(adjustedDate.getMonth() + 1).padStart(2, '0'); const dd = String(adjustedDate.getDate()).padStart(2, '0'); if (format === 'yyyy-mm-dd') { return `${yyyy}-${mm}-${dd}`; } return `${dd}/${mm}/${yyyy}`; }
     function getIntervalKey(date, interval) { const year = date.getFullYear(); const month = date.getMonth(); if (interval === 'quarter') { const quarter = Math.floor(month / 3) + 1; return `${year}-Q${quarter}`; } if (interval === 'month') { return `${year}-${String(month + 1).padStart(2, '0')}`; } return date.toLocaleDateString('en-CA'); }
     function formatAmountForDashboard(amount) { if (amount == null) return 'UGX 0'; const sign = amount < 0 ? "-" : ""; const absAmount = Math.abs(amount); let formattedValue; if (absAmount >= 1000000) { const millions = absAmount / 1000000; formattedValue = (Math.round(millions * 100) / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + 'M'; } else { formattedValue = absAmount.toLocaleString(); } return `${sign}UGX ${formattedValue}`; }
-    let pyodide = null;
-    let pyodideLoadingPromise = null;
-
-    async function loadPy() {
-        if (pyodide) { return pyodide; }
-        if (pyodideLoadingPromise) { return pyodideLoadingPromise; }
-
-        pyodideLoadingPromise = (async () => {
-            statusMessage.textContent = 'Initializing Excel exporter...';
-            downloadBtn.disabled = true;
-            downloadBtn.textContent = 'Preparing...';
-
-            try {
-                const loadedPyodide = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/" });
-                statusMessage.textContent = 'Loading libraries...';
-                await loadedPyodide.loadPackage(['micropip']);
-                const micropip = loadedPyodide.pyimport("micropip");
-                await micropip.install('openpyxl==3.1.2');
-                pyodide = loadedPyodide;
-                statusMessage.textContent = '';
-                return pyodide;
-            } catch (error) {
-                console.error("Pyodide loading failed:", error);
-                showToast("Failed to load Excel library.", "error");
-                throw error;
-            } finally {
-                downloadBtn.disabled = getFilteredEntries().length === 0;
-                downloadBtn.textContent = 'Download Excel';
-                pyodideLoadingPromise = null;
-            }
-        })();
-        return pyodideLoadingPromise;
-    }
+    let pyodideReadyPromise;
+    async function loadPy() { if (!pyodideReadyPromise) { statusMessage.textContent = 'Initializing Excel exporter...'; pyodideReadyPromise = loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/" }).then(async (pyodide) => { statusMessage.textContent = 'Loading libraries...'; await pyodide.loadPackage(['micropip']); const micropip = pyodide.pyimport("micropip"); await micropip.install('openpyxl==3.1.2'); statusMessage.textContent = ''; return pyodide; }); } return pyodideReadyPromise; }
     
     // --- AUTHENTICATION & ROLE MANAGEMENT ---
     onAuthStateChanged(auth, async (user) => {
-        const isLoggedIn = !!user;
-        appView.classList.toggle('hidden', !isLoggedIn);
-        loginView.classList.toggle('hidden', isLoggedIn);
-        appHelpBtn.classList.toggle('hidden', !isLoggedIn);
-        loginHelpBtn.classList.toggle('hidden', isLoggedIn);
-
-        if (isLoggedIn) {
+        if (user) { // User is logged in
+            loginView.classList.add('hidden');
+            loadingOverlay.classList.remove('hidden'); // Show loader
+            appView.classList.add('hidden'); // Ensure app is hidden
+            appHelpBtn.classList.remove('hidden');
+            loginHelpBtn.classList.add('hidden');
+            
             currentUser = user;
             await loadUserProfile(user.uid); 
             
-            if (!currentUserProfile) return;
+            if (!currentUserProfile) {
+                loadingOverlay.classList.add('hidden'); // Hide loader if profile fails
+                return;
+            };
 
             document.body.className = 'bg-gray-50 dark:bg-[#0D1117] min-h-screen font-sans';
             userEmailSpan.textContent = user.email;
             userEmailDropdown.textContent = user.email;
             updateRoleUI();
             
-            loadDataFromFirestore();
+            loadDataFromFirestore(); // This will eventually hide the loader and show the app
+            loadPy();
             setupInactivityListeners();
-        } else {
+        } else { // User is logged out
             currentUser = null;
             currentUserProfile = null;
             if (unsubscribeFromFirestore) unsubscribeFromFirestore();
+            
+            // Hide everything except login view
+            appView.classList.add('hidden');
+            loadingOverlay.classList.add('hidden');
+            loginView.classList.remove('hidden');
+            appHelpBtn.classList.add('hidden');
+            loginHelpBtn.classList.remove('hidden');
+            
             document.body.className = 'bg-gray-100 dark:bg-[#0D1117] min-h-screen font-sans';
             userEmailSpan.textContent = '';
             syncStatus.innerHTML = '';
             appData = {};
             updateUI();
             removeInactivityListeners();
+            applyTheme(); // Theme for login page
         }
-        applyTheme();
     });
 
     async function loadUserProfile(uid) {
@@ -1229,10 +1070,6 @@
             btn.title = isAdmin ? '' : 'This feature is for admins only.';
             btn.classList.toggle('hidden', !isAdmin); 
         });
-        
-        // START: TOGGLE REPORTS TAB VISIBILITY
-        tabButtons.reports.classList.toggle('hidden', !isAdmin);
-        // END: TOGGLE REPORTS TAB VISIBILITY
     }
 
     const goToPasswordStep = () => { if (!emailInput.value) { emailAuthError.textContent = 'Please enter your email.'; return; } emailAuthError.textContent = ''; passwordAuthError.textContent = ''; userEmailDisplay.textContent = emailInput.value; emailStep.classList.add('hidden'); passwordStep.classList.remove('hidden'); passwordInput.focus(); };
@@ -1288,9 +1125,6 @@
         unsubscribeFromFirestore = onSnapshot(orgDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 appData = docSnap.data();
-                if (!appData.organizationSettings) {
-                    appData.organizationSettings = { categories: ['Salary', 'Rent', 'Groceries', 'Utilities', 'Transport', 'Entertainment'] };
-                }
                 const journalIds = Object.keys(appData.journals || {});
                 let initialView = viewOptions.currentJournalView; // Keep current view
                 if (!journalIds.includes(initialView) && initialView !== 'all') {
@@ -1304,9 +1138,15 @@
                 saveDataToFirestore();
             }
             updateUI(); 
+            // Transition from loading screen to app view
+            loadingOverlay.classList.add('hidden');
+            appView.classList.remove('hidden');
+            applyTheme();
         }, (error) => {
             console.error("Firestore snapshot error: ", error);
             showToast("Error connecting to cloud data.", 'error');
+            loadingOverlay.classList.add('hidden');
+            signOut(auth);
         });
     }
 
@@ -1316,10 +1156,7 @@
             journals: {
                 [firstJournalId]: { name: "Main Journal", entries: [], lastModified: new Date().toISOString() }
             },
-            activeJournalId: firstJournalId,
-            organizationSettings: {
-                categories: ['Salary', 'Rent', 'Groceries', 'Utilities', 'Transport', 'Entertainment']
-            }
+            activeJournalId: firstJournalId
         };
         logActivity('initialize_organization');
     }
@@ -1594,244 +1431,72 @@
         }
     }
 
-    // --- REPORTS PAGE LOGIC ---
-    function getEntriesForReportYears() {
-        const selectedYear = parseInt(viewOptions.reportsSelectedYear, 10);
-        const prevYear = selectedYear - 1;
-
-        // Always use all journals for reports
-        const entriesToFilter = Object.values(appData.journals || {}).flatMap(j => j.entries || []);
-
-        const currentYearEntries = entriesToFilter.filter(e => e && e.date && new Date(e.date).getFullYear() === selectedYear);
-        const prevYearEntries = entriesToFilter.filter(e => e && e.date && new Date(e.date).getFullYear() === prevYear);
-
-        return { currentYearEntries, prevYearEntries };
-    }
-
-    function renderYoYChart() {
-        if (yoyChartInstance) yoyChartInstance.destroy();
-        const { currentYearEntries, prevYearEntries } = getEntriesForReportYears();
-        const selectedYear = viewOptions.reportsSelectedYear;
-        const prevYear = parseInt(selectedYear) - 1;
-
-        const calcTotals = (entries) => ({
-            income: entries.filter(e => e.type === 'Income').reduce((sum, e) => sum + e.amount, 0),
-            expense: entries.filter(e => e.type === 'Expense').reduce((sum, e) => sum + e.amount, 0)
-        });
-
-        const currentTotals = calcTotals(currentYearEntries);
-        const prevTotals = calcTotals(prevYearEntries);
-
-        const isDarkMode = document.documentElement.classList.contains('dark');
-        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-        const textColor = isDarkMode ? '#d1d5db' : '#4b5563';
-
-        yoyChartInstance = new Chart(yoyChartCanvas, {
-            type: 'bar',
-            data: {
-                labels: ['Income', 'Expense'],
-                datasets: [{
-                    label: prevYear.toString(),
-                    data: [prevTotals.income, prevTotals.expense],
-                    backgroundColor: isDarkMode ? '#4b5563' : '#d1d5db', // Gray
-                }, {
-                    label: selectedYear.toString(),
-                    data: [currentTotals.income, currentTotals.expense],
-                    backgroundColor: '#f97316', // TCK Orange
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top', labels: { color: textColor } },
-                },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, callback: value => formatAmountForDashboard(value).replace('UGX ','') } },
-                    x: { grid: { color: gridColor }, ticks: { color: textColor } }
-                }
-            }
-        });
-    }
-    
-    function renderCashFlowTable() {
-        const { currentYearEntries } = getEntriesForReportYears();
-        const monthlyData = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
-
-        currentYearEntries.forEach(e => {
-            const monthIndex = new Date(e.date).getMonth();
-            if (e.type === 'Income') {
-                monthlyData[monthIndex].income += e.amount;
-            } else {
-                monthlyData[monthIndex].expense += e.amount;
-            }
-        });
-
-        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        cashFlowTableBody.innerHTML = monthlyData.map((month, index) => {
-            const net = month.income - month.expense;
-            const netClass = net >= 0 ? 'text-lime-600 dark:text-lime-500' : 'text-red-600 dark:text-red-500';
-            return `
-                <tr class="dark:text-gray-300">
-                    <td class="py-2 px-4 whitespace-nowrap font-medium">${monthNames[index]}</td>
-                    <td class="py-2 px-4 text-right font-mono">${month.income.toLocaleString()}</td>
-                    <td class="py-2 px-4 text-right font-mono">${month.expense.toLocaleString()}</td>
-                    <td class="py-2 px-4 text-right font-mono ${netClass}">${net.toLocaleString()}</td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function populateReportsYearSelect() {
-        const entriesToScan = Object.values(appData.journals || {}).flatMap(j => j.entries || []);
-        const years = [...new Set(entriesToScan.map(e => new Date(e.date).getFullYear()))].sort((a,b) => b-a);
-        
-        reportsYearSelect.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
-        if (years.length === 0) {
-            const currentYear = new Date().getFullYear();
-            reportsYearSelect.innerHTML = `<option value="${currentYear}">${currentYear}</option>`;
-        }
-        // Ensure the view option is valid or default it
-        if (!years.includes(parseInt(viewOptions.reportsSelectedYear))) {
-            viewOptions.reportsSelectedYear = years[0] || new Date().getFullYear().toString();
-        }
-        reportsYearSelect.value = viewOptions.reportsSelectedYear;
-    }
-
-    function populateSourceCompareSelectors() {
-        const { currentYearEntries } = getEntriesForReportYears();
-        const sources = [...new Set(currentYearEntries.map(e => e.method).filter(Boolean))].sort();
-        
-        const optionsHtml = sources.map(source => `<option value="${source}">${source}</option>`).join('');
-        
-        sourceCompareSelect1.innerHTML = optionsHtml;
-        sourceCompareSelect2.innerHTML = optionsHtml;
-
-        // Set default selections
-        viewOptions.reportsCompareSource1 = sources.includes(viewOptions.reportsCompareSource1) ? viewOptions.reportsCompareSource1 : (sources[0] || '');
-        viewOptions.reportsCompareSource2 = sources.includes(viewOptions.reportsCompareSource2) ? viewOptions.reportsCompareSource2 : (sources[1] || sources[0] || '');
-
-        sourceCompareSelect1.value = viewOptions.reportsCompareSource1;
-        sourceCompareSelect2.value = viewOptions.reportsCompareSource2;
-    }
-
-    function renderSingleSourceTable(tableBodyEl, source) {
-        if (!source) {
-            tableBodyEl.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">Select a source</td></tr>`;
-            return;
-        }
-
-        const { currentYearEntries } = getEntriesForReportYears();
-        const sourceEntries = currentYearEntries.filter(e => e.method === source);
-
-        if (sourceEntries.length === 0) {
-            tableBodyEl.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No data for ${source}</td></tr>`;
-            return;
-        }
-
-        const monthlyData = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
-
-        sourceEntries.forEach(e => {
-            const monthIndex = new Date(e.date).getMonth();
-            if (e.type === 'Income') {
-                monthlyData[monthIndex].income += e.amount;
-            } else {
-                monthlyData[monthIndex].expense += e.amount;
-            }
-        });
-
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        tableBodyEl.innerHTML = monthlyData.map((month, index) => {
-            const net = month.income - month.expense;
-            const netClass = net > 0 ? 'text-lime-600' : (net < 0 ? 'text-red-600' : 'text-gray-500');
-            return `
-                <tr class="dark:text-gray-300">
-                    <td class="py-1 px-2 font-medium">${monthNames[index]}</td>
-                    <td class="py-1 px-2 text-right font-mono">${month.income > 0 ? month.income.toLocaleString() : '-'}</td>
-                    <td class="py-1 px-2 text-right font-mono">${month.expense > 0 ? month.expense.toLocaleString() : '-'}</td>
-                    <td class="py-1 px-2 text-right font-mono ${netClass}">${net.toLocaleString()}</td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function renderSourceComparisonTables() {
-        renderSingleSourceTable(sourceCompareTable1Body, viewOptions.reportsCompareSource1);
-        renderSingleSourceTable(sourceCompareTable2Body, viewOptions.reportsCompareSource2);
-    }
-
-    function renderReportsPage() {
-        if (!currentUserProfile || currentUserProfile.role !== 'admin' || !appData.journals) {
-            reportsMainContent.classList.add('hidden');
-            reportsMessage.classList.remove('hidden');
-            reportsMessage.textContent = "You do not have permission to view this page or no data is available.";
-            return;
-        }
-
-        populateReportsYearSelect();
-        
-        const { currentYearEntries, prevYearEntries } = getEntriesForReportYears();
-        if (currentYearEntries.length === 0 && prevYearEntries.length === 0) {
-            reportsMainContent.classList.add('hidden');
-            reportsMessage.classList.remove('hidden');
-            reportsMessage.textContent = "No data available for the selected year.";
-            if (yoyChartInstance) yoyChartInstance.destroy();
-            cashFlowTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No data</td></tr>`;
-            sourceCompareTable1Body.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No data</td></tr>`;
-            sourceCompareTable2Body.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">No data</td></tr>`;
-            return;
-        }
-        
-        reportsMainContent.classList.remove('hidden');
-        reportsMessage.classList.add('hidden');
-
-        populateSourceCompareSelectors();
-        renderYoYChart();
-        renderSourceComparisonTables();
-        renderCashFlowTable();
-    }
-
 
     // --- CRUD & JOURNAL MANAGEMENT ---
     function isJournalNameTaken(name, excludingId = null) { const lowerCaseName = name.trim().toLowerCase(); for (const id in appData.journals) { if (id === excludingId) continue; if (appData.journals[id].name.toLowerCase() === lowerCaseName) { return true; } } return false; }
     
-    function createNewJournal(journalName) {
-        if (!journalName || journalName.trim() === '') return;
-        if (isJournalNameTaken(journalName)) {
-            showToast(`A journal named '${journalName.trim()}' already exists.`, "error");
-            return;
-        }
-        createJournalModal.classList.add('hidden');
-        const newId = `journal_${Date.now()}`;
-        if (!appData.journals) appData.journals = {};
-        appData.journals[newId] = { name: journalName.trim(), entries: [], lastModified: new Date().toISOString() };
-        appData.activeJournalId = newId;
-        viewOptions.currentJournalView = newId;
-        
-        saveDataToFirestore().then(() => {
-            logActivity('create_journal', { journalName: journalName.trim() });
-            showToast("Journal created!", "success");
-            updateUI();
-        });
+    function showJournalNameModal(title, message, placeholder, currentName = '', onConfirm) {
+        journalModalTitle.textContent = title;
+        journalModalMessage.textContent = message;
+        journalNameInput.placeholder = placeholder;
+        journalNameInput.value = currentName;
+        journalNameConfirmCallback = onConfirm;
+        journalNameModal.classList.remove('hidden');
+        journalNameInput.focus();
     }
 
-    function renameActiveJournal(journalId, newName) {
+    function createNewJournal() {
+        showJournalNameModal(
+            'Create New Journal',
+            'Please enter a name for your new financial journal.',
+            'e.g., Personal Finances',
+            '',
+            (journalName) => {
+                if (!journalName || journalName.trim() === '') return;
+                if (isJournalNameTaken(journalName)) {
+                    showToast(`A journal named '${journalName.trim()}' already exists.`, "error");
+                    return;
+                }
+                const newId = `journal_${Date.now()}`;
+                if (!appData.journals) appData.journals = {};
+                appData.journals[newId] = { name: journalName.trim(), entries: [], lastModified: new Date().toISOString() };
+                appData.activeJournalId = newId;
+                viewOptions.currentJournalView = newId;
+                
+                saveDataToFirestore().then(() => {
+                    logActivity('create_journal', { journalName: journalName.trim() });
+                    showToast("Journal created!", "success");
+                    updateUI();
+                });
+            }
+        );
+    }
+
+    function renameActiveJournal(journalId) {
         const activeJournal = appData.journals[journalId];
         if (!activeJournal) return;
         const oldName = activeJournal.name;
-        if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
-        if (isJournalNameTaken(newName, journalId)) {
-            showToast(`A journal named '${newName.trim()}' already exists.`, "error");
-            return;
-        }
-        renameJournalModal.classList.add('hidden');
-        activeJournal.name = newName.trim();
         
-        saveDataToFirestore(true).then(() => {
-            logActivity('rename_journal', { oldName, newName: newName.trim() });
-            showToast("Journal renamed!", "success");
-            updateUI();
-        });
+        showJournalNameModal(
+            'Rename Journal',
+            `Enter a new name for the journal "${oldName}".`,
+            '',
+            oldName,
+            (newName) => {
+                if (!newName || newName.trim() === '' || newName.trim() === oldName) return;
+                if (isJournalNameTaken(newName, journalId)) {
+                    showToast(`A journal named '${newName.trim()}' already exists.`, "error");
+                    return;
+                }
+                activeJournal.name = newName.trim();
+                
+                saveDataToFirestore(true).then(() => {
+                    logActivity('rename_journal', { oldName, newName: newName.trim() });
+                    showToast("Journal renamed!", "success");
+                    updateUI();
+                });
+            }
+        );
     }
 
     async function deleteActiveJournal(journalId) {
@@ -1905,79 +1570,8 @@
     
     function updateEntry(e) { e.preventDefault(); const entryId = document.getElementById('editEntryId').value; if (!entryId) return; let entryIndex, journalId; for (const jId in appData.journals) { const index = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (index !== -1) { entryIndex = index; journalId = jId; break; } } if (entryIndex === undefined) return; const formattedDate = assembleAndValidateDate(editDateDayInput, editDateMonthInput, editDateYearInput); if (!formattedDate) return; appData.journals[journalId].entries[entryIndex] = { id: entryId, date: formattedDate, type: document.getElementById('editType').value, method: document.getElementById('editMethod').value, narration: document.getElementById('editNarration').value.trim(), amount: parseFloat(editAmountInput.value.replace(/,/g, '')) || 0 }; saveDataToFirestore(true).then(() => { logActivity('update_entry', { narration: appData.journals[journalId].entries[entryIndex].narration, journalName: appData.journals[journalId].name }); showToast("Entry updated", "success"); }); editEntryModal.classList.add('hidden'); }
     
-    function deleteEntry(entryId) {
-        showConfirmationModal("Are you sure you want to delete this entry?", () => {
-            let journalId, entryIndex, deletedEntry;
-            for (const jId in appData.journals) {
-                const index = appData.journals[jId].entries.findIndex(e => e.id === entryId);
-                if (index > -1) {
-                    journalId = jId;
-                    entryIndex = index;
-                    break;
-                }
-            }
-            if (!journalId) return;
-
-            // Cache the entry for undo
-            deletedEntry = appData.journals[journalId].entries[entryIndex];
-            undoCache = { entry: deletedEntry, journalId: journalId, index: entryIndex };
-            
-            // Optimistically remove from data and UI
-            appData.journals[journalId].entries.splice(entryIndex, 1);
-            renderTable(); // Re-render to remove the row
-
-            // Show the undo toast
-            showUndoToast();
-        });
-    }
+    function deleteEntry(entryId) { let journalId; let deletedEntryNarration; for (const jId in appData.journals) { const entryIndex = appData.journals[jId].entries.findIndex(e => e.id === entryId); if (entryIndex > -1) { journalId = jId; deletedEntryNarration = appData.journals[jId].entries[entryIndex].narration; appData.journals[jId].entries.splice(entryIndex, 1); break; } } if (!journalId) return; saveDataToFirestore(true).then(() => { logActivity('delete_entry', { narration: deletedEntryNarration, journalName: appData.journals[journalId].name }); showToast("Entry deleted", "info"); }); }
     
-    function showUndoToast() {
-        if (undoTimer) clearTimeout(undoTimer);
-
-        const undoWrapper = document.getElementById('undo-toast-wrapper');
-        undoWrapper.innerHTML = `
-            <div id="undo-toast" class="undo-toast-container">
-                <div class="bg-gray-800 text-white rounded-lg shadow-2xl p-4 flex items-center justify-between dark:bg-gray-900 dark:border dark:border-gray-700">
-                    <span class="text-sm font-medium">Entry deleted.</span>
-                    <button id="undo-btn" class="font-bold text-sm text-orange-400 hover:text-orange-300 transition-colors">UNDO</button>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('undo-btn').addEventListener('click', () => {
-            clearTimeout(undoTimer); // Prevent permanent deletion
-            
-            // Restore from cache
-            if (undoCache) {
-                appData.journals[undoCache.journalId].entries.splice(undoCache.index, 0, undoCache.entry);
-                undoCache = null;
-                renderTable();
-                showToast("Action undone.", "success");
-            }
-            
-            const toastEl = document.getElementById('undo-toast');
-            if (toastEl) {
-                toastEl.classList.add('fading-out');
-                toastEl.addEventListener('animationend', () => toastEl.remove());
-            }
-        });
-
-        undoTimer = setTimeout(() => {
-            const toastEl = document.getElementById('undo-toast');
-            if (toastEl) {
-                toastEl.classList.add('fading-out');
-                toastEl.addEventListener('animationend', () => toastEl.remove());
-            }
-            if (undoCache) {
-                // Permanently delete by saving the state where the entry is already removed
-                saveDataToFirestore(true).then(() => {
-                    logActivity('delete_entry', { narration: undoCache.entry.narration, journalName: appData.journals[undoCache.journalId]?.name || 'Unknown' });
-                });
-                undoCache = null; // Clear cache after permanent deletion
-            }
-        }, 8000); // 8-second window to undo
-    }
-
     function updateBulkDeleteButton() { const count = selectedEntryIds.size; bulkDeleteBtn.textContent = `Delete Selected (${count})`; bulkDeleteBtn.classList.toggle('hidden', count === 0); }
     
     function bulkDeleteEntries() { const count = selectedEntryIds.size; for (const jId in appData.journals) { appData.journals[jId].entries = appData.journals[jId].entries.filter(entry => !selectedEntryIds.has(entry.id)); } selectedEntryIds.clear(); saveDataToFirestore(true).then(() => { logActivity('bulk_delete_entries', { count }); showToast(`${count} entries deleted`, "info"); }); }
@@ -2130,8 +1724,6 @@
         
         if (activeTabKey === 'admin') {
             loadUserActivities();
-        } else if (activeTabKey === 'reports') {
-            renderReportsPage();
         }
 
         const allTimeBtn = document.querySelector('.kpi-range-btn[data-range="all"]');
@@ -2214,11 +1806,8 @@
 
         if (isSelectAction) { 
             setActiveJournalView(journalId, true); 
-        } else if (isRenameAction) {
-            renameJournalNameInput.value = appData.journals[journalId]?.name;
-            renameJournalIdInput.value = journalId;
-            renameJournalModal.classList.remove('hidden');
-            renameJournalNameInput.focus();
+        } else if (isRenameAction) { 
+            renameActiveJournal(journalId); 
         } else if (isDeleteAction && isAdmin) { 
             const name = appData.journals[journalId]?.name;
             if (name) showConfirmationModal(`Delete '${name}' and all its entries? This cannot be undone.`, () => deleteActiveJournal(journalId)); 
@@ -2227,51 +1816,22 @@
     manageJournalSelect.addEventListener('change', (e) => {
         setActiveJournalView(e.target.value, true);
     });
-    // START: REPORTS PAGE LISTENERS
-    reportsYearSelect.addEventListener('change', (e) => {
-        viewOptions.reportsSelectedYear = e.target.value;
-        renderReportsPage();
-    });
-    sourceCompareSelect1.addEventListener('change', (e) => {
-        viewOptions.reportsCompareSource1 = e.target.value;
-        renderSourceComparisonTables();
-    });
-    sourceCompareSelect2.addEventListener('change', (e) => {
-        viewOptions.reportsCompareSource2 = e.target.value;
-        renderSourceComparisonTables();
-    });
-    // END: REPORTS PAGE LISTENERS
     prevPageBtn.addEventListener('click', () => { if (viewOptions.currentPage > 1) { viewOptions.currentPage--; renderTable(); } });
     nextPageBtn.addEventListener('click', () => { viewOptions.currentPage++; renderTable(); });
     entryForm.addEventListener('submit', addEntry);
     editEntryForm.addEventListener('submit', updateEntry);
-    // START: JOURNAL MODAL EVENT LISTENERS
-    createJournalBtn.addEventListener('click', () => {
-        createJournalForm.reset();
-        createJournalModal.classList.remove('hidden');
-        newJournalNameInput.focus();
-    });
-    createJournalForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        createNewJournal(newJournalNameInput.value);
-    });
-    createJournalCancelBtn.addEventListener('click', () => createJournalModal.classList.add('hidden'));
-
-    renameJournalForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        renameActiveJournal(renameJournalIdInput.value, renameJournalNameInput.value);
-    });
-    renameJournalCancelBtn.addEventListener('click', () => renameJournalModal.classList.add('hidden'));
-    // END: JOURNAL MODAL EVENT LISTENERS
+    createJournalBtn.addEventListener('click', createNewJournal);
     mergeJournalBtn.addEventListener('click', toggleMergeMode);
     bulkDeleteBtn.addEventListener('click', () => { showConfirmationModal(`Are you sure you want to delete ${selectedEntryIds.size} selected entries? This cannot be undone.`, bulkDeleteEntries); });
-    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { deleteEntry(e.target.dataset.id); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
+    const handleTableClick = (e) => { if (e.target.classList.contains('delete-btn')) { showConfirmationModal("Are you sure you want to delete this entry?", () => deleteEntry(e.target.dataset.id)); } if (e.target.classList.contains('edit-btn')) { openEditModal(e.target.dataset.id); } if (e.target.classList.contains('row-checkbox')) { const id = e.target.dataset.id; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } updateBulkDeleteButton(); } };
     tableBody.addEventListener('click', handleTableClick);
     recentEntriesBody.addEventListener('click', handleTableClick);
     selectAllCheckbox.addEventListener('change', (e) => { const checkboxes = tableBody.querySelectorAll('.row-checkbox'); checkboxes.forEach(checkbox => { const id = checkbox.dataset.id; checkbox.checked = e.target.checked; if (e.target.checked) { selectedEntryIds.add(id); } else { selectedEntryIds.delete(id); } }); updateBulkDeleteButton(); });
     modalConfirmBtn.addEventListener('click', () => { if (typeof confirmCallback === 'function') { confirmCallback(); confirmCallback = null; } confirmationModal.classList.add('hidden'); });
     modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
     editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden'));
+    journalNameForm.addEventListener('submit', (e) => { e.preventDefault(); if (typeof journalNameConfirmCallback === 'function') { journalNameConfirmCallback(journalNameInput.value); } journalNameModal.classList.add('hidden'); journalNameConfirmCallback = null; });
+    journalModalCancelBtn.addEventListener('click', () => { journalNameModal.classList.add('hidden'); journalNameConfirmCallback = null; });
     importBackupBtn.addEventListener('click', () => fileImporter.click());
     fileImporter.addEventListener('change', (event) => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { importedDataCache = JSON.parse(e.target.result); if (importedDataCache && importedDataCache.journals) { importOptionsModal.classList.remove('hidden'); } else { throw new Error("Invalid backup file format."); } } catch (err) { showToast(err.message, "error"); importedDataCache = null; } }; reader.readAsText(file); event.target.value = null; });
     importCancelBtn.addEventListener('click', () => { importOptionsModal.classList.add('hidden'); importedDataCache = null; });
@@ -2312,12 +1872,15 @@
             return;
         }
 
+        downloadBtn.disabled = true;
+        showToast('Preparing your workbook...', 'info');
+
         try {
-            const pyodideInstance = await loadPy();
-            pyodideInstance.globals.set('entries_json', JSON.stringify(entriesToDownload));
-            pyodideInstance.globals.set('journal_name_js', journalName);
+            const pyodide = await loadPy();
+            pyodide.globals.set('entries_json', JSON.stringify(entriesToDownload));
+            pyodide.globals.set('journal_name_js', journalName);
             
-            const base64Data = await pyodideInstance.runPythonAsync(`
+            const base64Data = await pyodide.runPythonAsync(`
 import json, io, base64
 from datetime import datetime
 from openpyxl import Workbook
@@ -2456,20 +2019,31 @@ base64.b64encode(bio.getvalue()).decode('utf-8')
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         } catch (err) {
-            console.error('Error generating file:', err);
+            console.error('Error generating file:', err.message);
             showToast('Error! Could not generate file.', 'error');
+        } finally {
+            downloadBtn.disabled = getFilteredEntries().length === 0;
+            statusMessage.textContent = '';
         }
     });
 
     // Initial theme setup on script load
     applyTheme();
 
-    // --- CHANGE SUMMARY ---
-    // 1. **Lazy Loading for Excel Export:** The Pyodide library is now loaded on-demand when the "Download Excel" button is clicked, not at startup, improving initial app load time.
-    // 2. **Undo Delete:** A confirmation modal still appears, but after confirming, a toast bar provides an 8-second window to "Undo" the deletion of a single entry, preventing accidental data loss.
-    // 3. **Improved Journal Modals:** `window.prompt` has been replaced with clean, themed modals for creating and renaming journals, improving UI consistency and user experience.
-    // 4. **New Source Comparison Report:** The "Year-to-Year Breakdown" table has been replaced with a "Source vs. Source Monthly Comparison" feature. This allows users to select two sources and see their monthly cash flows side-by-side in two separate tables for the selected year.
-    // 5. **Data Structure for Categories:** The data model was updated to support a future standardized category system, paving the way for more accurate reporting.
+    /*
+    --- Changes Summary ---
+    1. Loading Animation:
+        - Added a full-screen loading overlay with a pulsing logo that appears after login and before the main app data is displayed.
+        - Modified the authentication flow (`onAuthStateChanged`) to show this loader while data is fetched from Firestore.
+        - The loader is hidden and the main app is revealed only after the initial data snapshot is received, preventing a flash of empty content.
+
+    2. Custom Journal Modal:
+        - Replaced the native `window.prompt()` for creating and renaming journals with a new, custom-styled modal (`journalNameModal`).
+        - The new modal matches the app's theme (including dark mode) and color scheme.
+        - Created a helper function (`showJournalNameModal`) to manage the modal's state and behavior.
+        - Updated the `createNewJournal` and `renameActiveJournal` functions to use this new modal, preserving all validation logic within callbacks.
+    */
+
   </script>
 </body>
 </html>
