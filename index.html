@@ -1134,8 +1134,8 @@
     recentEntriesBody.addEventListener('click', handleTableClick);
     selectAllCheckbox.addEventListener('change', (e) => { const checkboxes = tableBody.querySelectorAll('.row-checkbox'); checkboxes.forEach(checkbox => { const id = checkbox.dataset.id; checkbox.checked = e.target.checked; if (e.target.checked) selectedEntryIds.add(id); else selectedEntryIds.delete(id); }); updateBulkDeleteButton(); });
     modalConfirmBtn.addEventListener('click', () => { if (typeof confirmCallback === 'function') { confirmCallback(); confirmCallback = null; } confirmationModal.classList.add('hidden'); });
-    modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden');
-    editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden');
+    modalCancelBtn.addEventListener('click', () => confirmationModal.classList.add('hidden'));
+    editCancelBtn.addEventListener('click', () => editEntryModal.classList.add('hidden'));
     importBackupBtn.addEventListener('click', () => fileImporter.click());
     fileImporter.addEventListener('change', (event) => { /* ... unchanged ... */ });
     importCancelBtn.addEventListener('click', () => { /* ... unchanged ... */ });
